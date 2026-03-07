@@ -1,0 +1,254 @@
+/* RESTORED: Cyber-security Style for About Page */
+
+.cyber-about-container {
+    width: 100%;
+    height: calc(100vh - 150px);
+    /* Fill remaining space exactly */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    /* Prevent scrolling */
+    background: #19140e;
+}
+
+/* Floating Dust Particles */
+.dust-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.tiny-dust {
+    position: absolute;
+    background: #d9bc94;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.cyber-stage {
+    position: relative;
+    width: 98%;
+    height: 95%;
+    /* Use more of the container height */
+    max-width: 1450px;
+    z-index: 5;
+    background: transparent;
+    border: none;
+}
+
+.cyber-svg-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.path-base {
+    fill: none;
+    stroke: #d9bc941a;
+    stroke-width: 1.5;
+    transition: all 0.4s ease;
+}
+
+.path-base.active {
+    stroke: #d9bc9499;
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 8px #d9bc9466);
+}
+
+/* Individual Node Styling */
+.cyber-node {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.node-content {
+    background: #1d140d;
+    border: 1.5px solid #d9bc9499;
+    border-radius: 8px;
+    padding: 12px 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 210px;
+    /* Uniform Width */
+    height: 55px;
+    /* Uniform Height */
+    box-shadow: 0 4px 15px #0000004c;
+    transition: all 0.3s ease;
+}
+
+.cyber-node.active .node-content {
+    border-color: #d9bc94;
+    background: #2d2319;
+    box-shadow: 0 0 20px #d9bc9433;
+    transform: scale(1.05);
+}
+
+.node-icon-bin {
+    color: #d9bc94;
+    display: flex;
+    align-items: center;
+    opacity: 0.8;
+}
+
+.node-label-stack {
+    display: flex;
+    flex-direction: column;
+}
+
+.node-tag {
+    font-size: 0.6rem;
+    color: #d9bc94;
+    opacity: 0.5;
+    font-family: monospace;
+    letter-spacing: 1px;
+}
+
+.node-name {
+    font-size: 0.85rem;
+    color: #e8d4b8;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* Terminal Log Popover */
+.terminal-popover {
+    position: absolute;
+    width: 320px;
+    /* Slightly wider */
+    background: #0d0a08f2;
+    border: 2px solid #d9bc94;
+    /* Solid, thicker border */
+    border-radius: 8px;
+    z-index: 100;
+    box-shadow: 0 10px 40px #000000b2, 0 0 15px #d9bc9433;
+    backdrop-filter: blur(8px);
+    overflow: visible;
+    /* Ensure content is not cut off */
+}
+
+/* Positioning handled by dynamic classes */
+.terminal-popover.top-position {
+    bottom: 75px;
+}
+
+.terminal-popover.bottom-position {
+    top: 75px;
+}
+
+/* Horizontal alignment classes */
+.terminal-popover.center-align {
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.terminal-popover.left-align {
+    left: 0;
+    transform: none;
+}
+
+.terminal-popover.right-align {
+    right: 0;
+    transform: none;
+}
+
+.terminal-header {
+    background: #d9bc9426;
+    padding: 6px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #d9bc941a;
+}
+
+.terminal-header span {
+    font-family: monospace;
+    font-size: 0.65rem;
+    color: #d9bc94;
+    letter-spacing: 1px;
+}
+
+.terminal-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.terminal-dots span {
+    width: 4px;
+    height: 4px;
+    background: #d9bc94;
+    border-radius: 50%;
+    opacity: 0.3;
+}
+
+.terminal-popover p {
+    padding: 15px;
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: #d9bc94;
+    line-height: 1.5;
+    min-height: 60px;
+}
+
+.terminal-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 12px;
+    background: #d9bc94;
+    margin-left: 2px;
+    animation: terminal-blink 0.8s infinite;
+    vertical-align: middle;
+}
+
+@keyframes terminal-blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+/* Glitch Animation for Active Node Border */
+.node-glitch-border {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 1px solid #d9bc94;
+    border-radius: 10px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.cyber-node.active .node-glitch-border {
+    opacity: 0.3;
+    animation: glitch-pulse 2s infinite;
+}
+
+@keyframes glitch-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.2;
+    }
+
+    50% {
+        transform: scale(1.03);
+        opacity: 0.4;
+    }
+}

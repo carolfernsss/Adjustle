@@ -1,0 +1,89 @@
+/* RESTORED: Cyber-security Style for Count Page (Student Attendance) */
+
+.count-page-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: calc(100vh - 120px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #19140e;
+}
+
+.count-bg-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.floating-number {
+    position: absolute;
+    color: #d9bc94;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    user-select: none;
+    white-space: nowrap;
+    animation: drift linear infinite;
+    opacity: 0.05;
+    mix-blend-mode: screen;
+}
+
+@keyframes drift {
+    0% {
+        transform: translateX(-10vw) rotate(0deg);
+    }
+
+    100% {
+        transform: translateX(110vw) rotate(360deg);
+    }
+}
+
+.count-content-layer {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    animation: fadeIn 1s ease-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Title and Subtitle Styling */
+.count-title-section {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-top: 10px;
+}
+
+.count-title-section h1 {
+    font-size: 3.2rem;
+    letter-spacing: 12px;
+    margin-bottom: 15px;
+    color: #d9bc94;
+    font-family: Garamond, serif;
+    text-shadow: 0 0 20px #d9bc944c;
+}
+
+.count-subtitle {
+    font-size: 0.9rem;
+    letter-spacing: 6px;
+    opacity: 0.5;
+    text-transform: uppercase;
+    color: #e8d4b8;
+}

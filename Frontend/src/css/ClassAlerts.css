@@ -1,0 +1,99 @@
+/* PREMIUM SIDEBAR STYLES (MATCHES SCREENSHOT) */
+
+.course-overview-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.class-alerts-title {
+    font-family: Garamond, serif;
+    color: #e8d4b8;
+    letter-spacing: 1px;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    text-align: center;
+    font-weight: bold;
+}
+
+.alert-item {
+    background: #100c06;
+    border: 1px solid #d9bc9426;
+    border-radius: 4px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.alert-subject {
+    font-family: inherit;
+    font-size: 0.75rem;
+    color: #e8d4b8;
+    font-weight: 400;
+}
+
+.alert-status {
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 4px 6px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.alert-green {
+    background: #22c55e0d;
+    color: #22c55e;
+    border-color: #22c55e4c;
+}
+
+.alert-red {
+    background: #ef44440d;
+    color: #f87171;
+    border-color: #ef44444c;
+}
+
+.class-alert-empty {
+    text-align: center;
+    padding: 30px;
+    opacity: 0.5;
+    color: #d9bc94;
+    font-style: italic;
+    font-size: 0.85rem;
+    border: 1px dashed #d9bc9433;
+    border-radius: 4px;
+}
+
+/* Merge Section Specifics */
+.merge-request-item {
+    background: #100c06;
+    border: 1px solid #d9bc9426;
+    border-radius: 4px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.merge-label {
+    font-size: 0.6rem;
+    color: #d9bc94;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 5px;
+}
+
+.merge-value {
+    font-size: 0.75rem;
+    color: #e8d4b8;
+    font-weight: 500;
+}

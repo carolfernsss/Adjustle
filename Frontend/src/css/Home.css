@@ -1,0 +1,218 @@
+.home-page {
+    min-height: 100vh;
+    position: relative;
+    padding-top: 20px;
+}
+
+/* ---------------- Notification Bell ---------------- */
+
+.home-bell {
+    position: absolute;
+    top: 30px;
+    right: 50px;
+    cursor: pointer;
+    transition: all 0.3s;
+    z-index: 100;
+    opacity: 0.5;
+    padding: 10px;
+}
+
+.home-bell:hover {
+    opacity: 1 !important;
+    transform: scale(1.1);
+}
+
+.home-bell.visible {
+    opacity: 1;
+}
+
+.bell-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+}
+
+/* ---------------- Hero Section ---------------- */
+
+.hero-text {
+    text-align: center;
+    margin-bottom: 90px;
+}
+
+.hero-text h1 {
+    font-family: Georgia, serif;
+    font-weight: bold;
+    font-size: 96px;
+    letter-spacing: 6px;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #e8d4b8;
+}
+
+.cursor {
+    animation: blink 1s infinite;
+}
+
+.tagline {
+    font-family: Arial, sans-serif;
+    color: #d9bc94;
+    opacity: 0.9;
+    font-size: 24px;
+    letter-spacing: 2px;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+/* ---------------- Updates Section ---------------- */
+
+.notifications-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
+}
+
+.notifications-container.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Divider */
+
+.section-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 45px;
+}
+
+.section-divider h2.section-title {
+    font-family: Georgia, serif;
+    font-size: 14px;
+    letter-spacing: 3px;
+    opacity: 0.8;
+    color: #e8d4b8;
+}
+
+.divider-line {
+    width: 90px;
+    height: 1px;
+    background: #d9bc94;
+    opacity: 0.4;
+}
+
+/* ---------------- Update Cards ---------------- */
+
+.dashboard-section {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    overflow: hidden;
+}
+
+.notifications-list {
+    display: flex;
+    gap: 20px;
+}
+
+.notification-card {
+    width: 320px;
+    padding: 26px;
+    border-radius: 18px;
+    background: #1c140ca6;
+    border: 1px solid #d9bc9426;
+    animation: fadeUp 0.6s ease forwards;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.notification-card:hover {
+    transform: translateY(-12px) scale(1.02);
+    box-shadow: 0 20px 40px #d9bc9433;
+    /* Glows from the back */
+    border-color: #d9bc9466;
+    /* Subtly lights up the border */
+}
+
+.carousel-wrapper:hover {
+    animation-play-state: paused !important;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Card Header */
+
+.notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    opacity: 0.7;
+    margin-bottom: 14px;
+    color: #d9bc94;
+}
+
+.notif-header .notif-type {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    text-transform: uppercase;
+}
+
+.notif-header .notif-time {
+    font-size: 11px;
+}
+
+/* Card Content */
+
+.notif-title {
+    font-family: Georgia, serif;
+    font-size: 15px;
+    margin-bottom: 6px;
+    color: #e8d4b8;
+}
+
+.notif-msg {
+    font-size: 13px;
+    line-height: 1.5;
+    opacity: 0.75;
+    color: #e8d4b8;
+}
+
+.no-notifications {
+    color: #e8d4b8;
+    opacity: 0.5;
+}
+
+@keyframes carousel-scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
