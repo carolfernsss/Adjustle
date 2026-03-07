@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+ultralytics
+opencv-python
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+requests
+sqlalchemy
+databases
+asyncpg
+python-dotenv
+psycopg2-binary
