@@ -120,7 +120,7 @@ const Home = function (props) {
         <section className="home-page">
             <video
                 autoPlay
-                loop
+                loop={true}
                 muted
                 playsInline
                 style={{
@@ -134,7 +134,7 @@ const Home = function (props) {
                     opacity: 0.2 // subtle background
                 }}
             >
-                <source src="https://assets.mixkit.co/videos/preview/mixkit-abstract-technology-digital-background-with-loop-21142-large.mp4" type="video/mp4" />
+                <source src="/Website_Screenshots_to_Professional_Video.mp4" type="video/mp4" />
             </video>
             <div
                 className={`home-bell ${showNotifications ? 'visible' : ''}`}

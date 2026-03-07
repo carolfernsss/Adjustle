@@ -66,7 +66,7 @@ function MergeRequestsSection(props) {
                 MERGE REQUESTS
             </h3>
 
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '30px' }}>
                 <button
                     onClick={fetchRequests}
                     style={{
@@ -75,12 +75,44 @@ function MergeRequestsSection(props) {
                         color: '#d9bc94',
                         fontSize: '9px',
                         cursor: 'pointer',
-                        padding: '2px 10px',
+                        padding: '4px 12px',
                         borderRadius: '10px'
                     }}
                 >
                     REFRESH LIST
                 </button>
+                {requests.length > 0 && (
+                    <button
+                        onClick={function () {
+                            if (!window.confirm("Are you sure you want to empty all merge requests?")) return;
+                            const url = (process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000') + '/clear_merges?branch=' + branch;
+                            fetch(url, { method: 'POST' })
+                                .then(function (res) { return res.json(); })
+                                .then(function (data) {
+                                    if (data.success) {
+                                        fetchRequests();
+                                        if (onActionComplete) onActionComplete();
+                                    } else {
+                                        alert("Action failed: " + data.message);
+                                    }
+                                })
+                                .catch(function (err) {
+                                    console.error("Error emptying list:", err);
+                                });
+                        }}
+                        style={{
+                            background: 'none',
+                            border: '1px solid #ef444444',
+                            color: '#ef4444',
+                            fontSize: '9px',
+                            cursor: 'pointer',
+                            padding: '4px 12px',
+                            borderRadius: '10px'
+                        }}
+                    >
+                        EMPTY LIST
+                    </button>
+                )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
