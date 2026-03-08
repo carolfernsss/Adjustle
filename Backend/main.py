@@ -73,16 +73,19 @@ def root():
 def health_check():
     return {"status": "healthy"}
 
+from pathlib import Path
+
 # Serve the React Frontend Build Directory
-frontend_build_dir = os.path.join(os.path.dirname(__file__), "..", "Frontend", "build")
-if os.path.exists(frontend_build_dir):
-    app.mount("/", StaticFiles(directory=frontend_build_dir, html=True), name="frontend")
+frontend_build_path = Path(__file__).resolve().parent.parent / "Frontend" / "build"
+
+if frontend_build_path.exists():
+    app.mount("/", StaticFiles(directory=frontend_build_path, html=True), name="frontend")
 
     @app.exception_handler(404)
     async def custom_404_handler(request, exc):
-        index_path = os.path.join(frontend_build_dir, "index.html")
-        if os.path.exists(index_path):
+        index_path = frontend_build_path / "index.html"
+        if index_path.exists():
             return FileResponse(index_path)
         return FileResponse(exc)
 else:
-    print(f"Warning: Frontend build folder not found at {frontend_build_dir}. Ensure you run 'npm run build' first.")
+    print(f"Warning: Frontend build folder not found at {frontend_build_path}. Ensure you run 'npm run build' first.")
