@@ -79,13 +79,24 @@ from pathlib import Path
 frontend_build_path = Path(__file__).resolve().parent.parent / "Frontend" / "build"
 
 if frontend_build_path.exists():
-    app.mount("/", StaticFiles(directory=frontend_build_path, html=True), name="frontend")
+    # Mount the React 'static' folder (JS/CSS)
+    react_static = frontend_build_path / "static"
+    if react_static.exists():
+        app.mount("/static/js", StaticFiles(directory=react_static / "js"), name="react_js")
+        app.mount("/static/css", StaticFiles(directory=react_static / "css"), name="react_css")
+        app.mount("/static/media", StaticFiles(directory=react_static / "media"), name="react_media")
 
-    @app.exception_handler(404)
-    async def custom_404_handler(request, exc):
+    # Serve files directly from the build root (like manifest.json, favicon.ico)
+    @app.get("/{file_name:path}")
+    async def serve_react_app(file_name: str):
+        file_path = frontend_build_path / file_name
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+            
+        # Fallback to index.html for React Router (Single Page Application)
         index_path = frontend_build_path / "index.html"
         if index_path.exists():
             return FileResponse(index_path)
-        return FileResponse(exc)
+        return {"error": "Frontend build index.html not found"}
 else:
     print(f"Warning: Frontend build folder not found at {frontend_build_path}. Ensure you run 'npm run build' first.")
