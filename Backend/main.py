@@ -75,30 +75,27 @@ def health_check():
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from pathlib import Path
 import os
 
-# Define the React build path:
-frontend_path = os.path.join(os.path.dirname(__file__), "..", "Frontend", "build")
+# Define the path to the React build folder:
+frontend_path = Path(__file__).resolve().parent.parent / "Frontend" / "build"
 
-if os.path.exists(frontend_path):
-    # Serve React static assets:
-    app.mount("/static", StaticFiles(directory=os.path.join(frontend_path, "static")), name="react_static")
+if frontend_path.exists():
+    # Serve React static assets (JS, CSS, media) so it doesn't result in a blank screen
+    app.mount("/static", StaticFiles(directory=frontend_path / "static"), name="react_static")
 
-    # Add a root route so the React UI loads:
-    @app.get("/")
-    async def serve_frontend():
-        return FileResponse(os.path.join(frontend_path, "index.html"))
-
-    # Wildcard catch-all for SPA routing (like /login or /count) and static files at root
-    @app.get("/{file_name:path}")
-    async def serve_react_app(file_name: str):
-        file_path = os.path.join(frontend_path, file_name)
-        if os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
+    # Add a catch-all route at the bottom of the file to serve the React app:
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        # Allow hitting exact files at the root (like manifest.json, logo.png)
+        exact_file = frontend_path / full_path
+        if exact_file.exists() and exact_file.is_file():
+            return FileResponse(exact_file)
             
-        index_path = os.path.join(frontend_path, "index.html")
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
-        return {"error": "Frontend build index.html not found"}
+        index_file = frontend_path / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        return {"message": "Frontend build not found"}
 else:
-    print(f"Warning: Frontend build folder not found at {frontend_path}. Ensure you run 'npm run build' first.")
+    print("Warning: Frontend build folder not found at", frontend_path)
