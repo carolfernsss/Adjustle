@@ -82,17 +82,11 @@ import os
 frontend_path = Path(__file__).resolve().parent.parent / "Frontend" / "build"
 
 if frontend_path.exists():
-    # Serve React static assets (JS, CSS, media) so it doesn't result in a blank screen
-    app.mount("/static", StaticFiles(directory=frontend_path / "static"), name="react_static")
-
-    # Add a catch-all route at the bottom of the file to serve the React app:
-    @app.get("/{full_path:path}")
-    async def serve_react_app(full_path: str):
-        # Allow hitting exact files at the root (like manifest.json, logo.png)
-        exact_file = frontend_path / full_path
-        if exact_file.exists() and exact_file.is_file():
-            return FileResponse(exact_file)
-            
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+    
+    # SPA Fallback for client-side routing like /login
+    @app.exception_handler(404)
+    async def custom_spa_handler(request, exc):
         index_file = frontend_path / "index.html"
         if index_file.exists():
             return FileResponse(index_file)
