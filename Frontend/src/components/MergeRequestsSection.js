@@ -7,7 +7,7 @@ function MergeRequestsSection(props) {
 
     //Wrapped in useCallback to fix ESLint dependency warnings
     const fetchRequests = useCallback(function () {
-        const base = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+        const base = process.env.REACT_APP_API_URL || '';
         const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
         const url = cleanBase + '/pending_merges?branch=' + branch;
 
@@ -33,7 +33,7 @@ function MergeRequestsSection(props) {
 
     // Function to handle accepting or rejecting a merge
     function handleAction(requestId, action) {
-        const url = (process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000') + '/negotiate_merge';
+        const url = (process.env.REACT_APP_API_URL || '') + '/negotiate_merge';
 
         const body = {
             request_id: requestId,
@@ -85,7 +85,7 @@ function MergeRequestsSection(props) {
                     <button
                         onClick={function () {
                             if (!window.confirm("Are you sure you want to empty all merge requests?")) return;
-                            const url = (process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000') + '/clear_merges?branch=' + branch;
+                            const url = (process.env.REACT_APP_API_URL || '') + '/clear_merges?branch=' + branch;
                             fetch(url, { method: 'POST' })
                                 .then(function (res) { return res.json(); })
                                 .then(function (data) {

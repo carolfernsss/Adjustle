@@ -90,7 +90,7 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
   useEffect(() => {
     if (loggedIn) {
       // Fetch reschedule data
-      fetch("http://127.0.0.1:8000/reschedule")
+      fetch((process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:8000') + "/reschedule")
         .then(res => res.json())
         .then(data => setReschedule(data.classes));
 
@@ -109,7 +109,7 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
       return;
     }
 
-    fetch("http://127.0.0.1:8000/login", {
+    fetch((process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:8000') + "/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password, role: selectedRole })

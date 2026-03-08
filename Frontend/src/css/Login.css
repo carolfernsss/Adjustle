@@ -50,18 +50,19 @@ body::-webkit-scrollbar {
 }
 
 .login-card {
-    width: 480px;
-    height: 620px;
+    width: 440px;
+    height: auto;
     background: #0d0a08f2;
     backdrop-filter: blur(20px);
     border: 1px solid #d9bc9433;
     border-radius: 30px;
-    padding: 50px 40px;
+    padding: 30px 40px 40px 40px;
     display: flex;
     flex-direction: column;
-    gap: 25px;
+    gap: 15px;
     box-shadow: 0 0 50px #000000cc,
         0 0 40px #d9bc9466;
+    margin-bottom: 20px;
 }
 
 @keyframes levitate {
@@ -77,11 +78,11 @@ body::-webkit-scrollbar {
 }
 
 .login-card h2 {
-    font-size: 3.5rem;
+    font-size: 3.2rem;
 
-    color: #e8d4b8;
+    color: #d9bc94;
     text-align: center;
-    margin: 0;
+    margin: 0 0 20px 0;
     letter-spacing: 12px;
     font-family: Garamond, serif;
     text-shadow: 0 0 30px #d9bc94cc, 0 0 60px #d9bc9480;

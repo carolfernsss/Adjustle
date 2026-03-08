@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+const API_BASE = process.env.REACT_APP_API_URL || "";
 
 // This modal pops up to notify teachers about new merge requests while they are using the app
 function MergeRequestModal(props) {

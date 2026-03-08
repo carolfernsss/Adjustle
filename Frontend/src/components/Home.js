@@ -5,7 +5,7 @@ import "../css/Home.css";
 const fullText = "ADJUSTLE";
 const fullText2 = "THE SCHEDULE THAT FITS YOU";
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+const API_BASE = process.env.REACT_APP_API_URL || "";
 
 /* ---- Home Page Component ---- */
 const Home = function (props) {

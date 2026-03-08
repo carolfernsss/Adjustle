@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import os
 import logging
 
@@ -54,7 +55,7 @@ app.include_router(scheduling_router, tags=["Scheduling"])
 app.include_router(ai_router, tags=["AI Module"])
 app.include_router(notification_router, tags=["Notifications"])
 
-@app.get("/")
+@app.get("/api")
 def root():
     return {
         "name": "Adjustle API",
@@ -71,3 +72,17 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+# Serve the React Frontend Build Directory
+frontend_build_dir = os.path.join(os.path.dirname(__file__), "..", "Frontend", "build")
+if os.path.exists(frontend_build_dir):
+    app.mount("/", StaticFiles(directory=frontend_build_dir, html=True), name="frontend")
+
+    @app.exception_handler(404)
+    async def custom_404_handler(request, exc):
+        index_path = os.path.join(frontend_build_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        return FileResponse(exc)
+else:
+    print(f"Warning: Frontend build folder not found at {frontend_build_dir}. Ensure you run 'npm run build' first.")

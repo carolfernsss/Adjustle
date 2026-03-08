@@ -53,7 +53,7 @@ const getSubjectFamily = function (subjectText) {
     return code;
 };
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+const API_BASE = process.env.REACT_APP_API_URL || "";
 
 // This is the main component that renders the interactive weekly timetable grid
 export default function Timetable(props) {
