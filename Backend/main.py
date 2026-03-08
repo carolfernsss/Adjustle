@@ -16,7 +16,7 @@ from Backend.authentication import auth_router as auth_router
 from Backend.scheduling import scheduling_router as scheduling_router
 from Backend.ai_module import ai_router as ai_router
 from Backend.notification import router as notification_router
-from Backend.database import init_db, close_db
+from Backend.database import init_db, close_db, db, users_table
 
 
 app = FastAPI(
@@ -39,6 +39,21 @@ async def startup_event():
     # Only keep critical messages as requested
     print("Database is initializing...")
     await init_db()
+    
+    # Seed default users
+    default_users = [
+        {"username": "BCATeacher", "password": "Teacher123@", "branch": "BCA", "role": "teacher"},
+        {"username": "BCADATeacher", "password": "Teacher123@", "branch": "BCADA", "role": "teacher"},
+        {"username": "Carol", "password": "Carol18@", "branch": "BCA", "role": "student"},
+        {"username": "Jerusha", "password": "Jerusha02@", "branch": "BCADA", "role": "student"},
+    ]
+    for u in default_users:
+        query = users_table.select().where(users_table.c.username == u["username"])
+        existing_user = await db.fetch_one(query)
+        if not existing_user:
+            await db.execute(users_table.insert().values(**u))
+            print(f"Seeded user: {u['username']}")
+
     print("ADJUSTLE BACKEND IS READY")
 
 @app.on_event("shutdown")
