@@ -74,22 +74,8 @@ def health_check():
     return {"status": "healthy"}
 
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from pathlib import Path
-import os
 
-# Define the path to the React build folder:
 frontend_path = Path(__file__).resolve().parent.parent / "Frontend" / "build"
 
-if frontend_path.exists():
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
-    
-    # SPA Fallback for client-side routing like /login
-    @app.exception_handler(404)
-    async def custom_spa_handler(request, exc):
-        index_file = frontend_path / "index.html"
-        if index_file.exists():
-            return FileResponse(index_file)
-        return {"message": "Frontend build not found"}
-else:
-    print("Warning: Frontend build folder not found at", frontend_path)
+app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
