@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from database import init_db, db, users_table, close_db
+from Backend.database import init_db, db, users_table, close_db
 
 async def check():
     await init_db()

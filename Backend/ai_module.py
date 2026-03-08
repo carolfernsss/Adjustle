@@ -2,7 +2,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import os
 import time
-from database import db, update_schedule, add_notification, choose_reschedule_day, update_occupancy, merge_requests_table, is_subject_shared
+from Backend.database import db, update_schedule, add_notification, choose_reschedule_day, update_occupancy, merge_requests_table, is_subject_shared
 from ultralytics import YOLO
 import cv2
 import numpy as np

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from database import get_notifs
+from Backend.database import get_notifs
 from typing import List, Optional
 
 # // Create a router specifically for notification-related endpoints

@@ -12,11 +12,11 @@ logging.getLogger("uvicorn.error").setLevel(logging.INFO)
 logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
 
 
-from authentication import auth_router as auth_router
-from scheduling import scheduling_router as scheduling_router
-from ai_module import ai_router as ai_router
-from notification import router as notification_router
-from database import init_db, close_db
+from Backend.authentication import auth_router as auth_router
+from Backend.scheduling import scheduling_router as scheduling_router
+from Backend.ai_module import ai_router as ai_router
+from Backend.notification import router as notification_router
+from Backend.database import init_db, close_db
 
 
 app = FastAPI(

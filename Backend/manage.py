@@ -4,7 +4,7 @@ import argparse
 import asyncio
 import os
 from datetime import datetime
-from database import (
+from Backend.database import (
     init_db, close_db, db, users_table, schedule_table, timetable_table, notifications_table,
     _seed_timetable_grid, _seed_schedule_alerts, add_notification
 )
