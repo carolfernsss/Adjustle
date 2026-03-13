@@ -1,0 +1,26 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
+
+# Database
+*.db
+*.sqlite3
+
+# Node
+node_modules/
+build/
+.npm
+package-lock.json
+
+# App Specific
+Backend/backend_static/results/*
+!Backend/backend_static/results/.gitkeep
+backend_static/results/*
+
+# OS
+.DS_Store
+Thumbs.db

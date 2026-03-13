@@ -3,4 +3,5 @@ __pycache__/
 *$py.class
 .venv/
 .env
-static/results/
+backend_static/results/*
+adjustle.db
