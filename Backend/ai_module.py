@@ -157,21 +157,22 @@ async def analyze_classroom_image(
     if img is None:
         raise HTTPException(status_code=400, detail="Image could not be decoded")
 
-    # Pass 1: Maximum Precision (imgsz 1280) - Multi-scale inference for dense crowds
+    # Pass 1: Maximum Precision (imgsz 1280) - High-sensitivity multi-scale inference
     try:
-        # Using augment=True for better accuracy and agnostic_nms to handle overlapping people
-        results = yolo_model.predict(img, classes=[0], conf=0.03, imgsz=1280, iou=0.7, max_det=1000, agnostic_nms=True, augment=True, verbose=False)
+        # Lowering confidence to 0.005 to catch small faces in the back of group photos
+        results = yolo_model.predict(img, classes=[0], conf=0.005, imgsz=1280, iou=0.5, max_det=500, agnostic_nms=True, augment=True, verbose=False)
         person_boxes = results[0].boxes
         detected_count = len(person_boxes)
         
         current_boxes = person_boxes
         names = results[0].names
         
-        if detected_count == 0:
-            # Only run fallback if absolutely needed to save time
-            results_all = yolo_model(img, classes=None, conf=0.1, imgsz=800, iou=0.4, max_det=300, verbose=False)
-            current_boxes = results_all[0].boxes
-            names = results_all[0].names
+        # If we still get a low number, try a second pass at a slightly different scale
+        if detected_count < 30:
+            results_b = yolo_model.predict(img, classes=[0], conf=0.01, imgsz=1024, iou=0.45, max_det=500, verbose=False)
+            if len(results_b[0].boxes) > detected_count:
+                current_boxes = results_b[0].boxes
+                detected_count = len(current_boxes)
     except Exception as e:
         print(f"Vision Processing Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Intelligence module failed during processing.")
