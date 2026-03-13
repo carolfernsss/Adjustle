@@ -157,9 +157,9 @@ async def analyze_classroom_image(
     if img is None:
         raise HTTPException(status_code=400, detail="Image could not be decoded")
 
-    # Pass 1: Detect People - Using 960 for better detection of distant students while maintaining efficiency
+    # Pass 1: Detect People - Using 640 for speed on Render hardware
     try:
-        results = yolo_model(img, classes=[0], conf=0.11, imgsz=960, iou=0.45, max_det=200, verbose=False)
+        results = yolo_model(img, classes=[0], conf=0.12, imgsz=640, iou=0.45, max_det=150, verbose=False)
         person_boxes = results[0].boxes
         detected_count = len(person_boxes)
         
@@ -168,7 +168,7 @@ async def analyze_classroom_image(
         
         # Pass 2: Fallback if no people detected (Detect anything)
         if detected_count == 0:
-            results_all = yolo_model(img, classes=None, conf=0.12, imgsz=960, iou=0.45, max_det=200, verbose=False)
+            results_all = yolo_model(img, classes=None, conf=0.15, imgsz=640, iou=0.45, max_det=150, verbose=False)
             current_boxes = results_all[0].boxes
             names = results_all[0].names
     except Exception as e:
@@ -241,6 +241,12 @@ async def analyze_classroom_image(
     # Step 3: Merge Restriction & Shared Subject Check
     is_shared = await is_subject_shared(subjectname)
 
+    # Force Merge for shared subjects if they were going to be Rescheduled
+    if is_shared and status == "Rescheduled":
+        status = "Merged"
+        teacher_msg_reason = f"Shared resource optimization. {teacher_msg_reason}"
+    
+    # If not shared, we cannot merge (must reschedule instead)
     if status == "Merged" and not is_shared:
         status = "Rescheduled"
 
