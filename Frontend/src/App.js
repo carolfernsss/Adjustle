@@ -8,8 +8,7 @@ import Notifications from "./components/Notifications";
 import Timetable from "./components/Timetable";
 import ClassAlerts from "./components/ClassAlerts";
 import InteractiveGuide from "./components/InteractiveGuide";
-import MergeRequestModal from "./components/MergeRequestModal";
-import MergeRequestsSection from "./components/MergeRequestsSection";
+import MergeRequests from "./components/MergeRequests";
 
 // Central Application component orchestrating global state management and routing logic
 function App() {
@@ -171,9 +170,10 @@ function App() {
 
           <div style={{ flex: '0 0 25%', maxWidth: '25%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {role.toLowerCase() === 'teacher' && (
-              <MergeRequestsSection
+              <MergeRequests
                 branch={branch}
                 onActionComplete={() => setRefreshTrigger(prev => prev + 1)}
+                variant="list"
               />
             )}
 
@@ -289,7 +289,7 @@ function App() {
 
       {/* Teacher's Merge Request Modal */}
       {(loggedIn && branch && role.toLowerCase() === 'teacher') && (
-        <MergeRequestModal branch={branch} username={username} />
+        <MergeRequests branch={branch} username={username} variant="popup" />
       )}
 
       {/* Quick Tour Invite */}
