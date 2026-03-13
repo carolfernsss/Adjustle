@@ -620,7 +620,7 @@ export default function Timetable(props) {
                                         className="button primary"
                                         style={{ borderColor: '#ef4444', color: '#ef4444' }}
                                         onClick={function () {
-                                            fetch("http://localhost:8000/reset_subject", {
+                                            fetch(API_BASE + "/reset_subject", {
                                                 method: "POST",
                                                 headers: { "Content-Type": "application/json" },
                                                 body: JSON.stringify({ subject: currentTestSubject.subject })
@@ -637,7 +637,7 @@ export default function Timetable(props) {
                                         className="button primary"
                                         style={{ borderColor: '#22c55e', color: '#22c55e' }}
                                         onClick={function () {
-                                            fetch("http://localhost:8000/extend_test_period", {
+                                            fetch(API_BASE + "/extend_test_period", {
                                                 method: "POST",
                                                 headers: { "Content-Type": "application/json" },
                                                 body: JSON.stringify({ subject: currentTestSubject.subject })
