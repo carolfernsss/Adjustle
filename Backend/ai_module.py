@@ -157,9 +157,9 @@ async def analyze_classroom_image(
     if img is None:
         raise HTTPException(status_code=400, detail="Image could not be decoded")
 
-    # Pass 1: Detect People - Using 640 for speed on Render hardware
+    # Pass 1: Maximum Accuracy (imgsz 800) with reasonable speed for group photos
     try:
-        results = yolo_model(img, classes=[0], conf=0.12, imgsz=640, iou=0.45, max_det=150, verbose=False)
+        results = yolo_model(img, classes=[0], conf=0.1, imgsz=800, iou=0.4, max_det=300, verbose=False)
         person_boxes = results[0].boxes
         detected_count = len(person_boxes)
         
@@ -168,7 +168,7 @@ async def analyze_classroom_image(
         
         # Pass 2: Fallback if no people detected (Detect anything)
         if detected_count == 0:
-            results_all = yolo_model(img, classes=None, conf=0.15, imgsz=640, iou=0.45, max_det=150, verbose=False)
+            results_all = yolo_model(img, classes=None, conf=0.1, imgsz=800, iou=0.4, max_det=300, verbose=False)
             current_boxes = results_all[0].boxes
             names = results_all[0].names
     except Exception as e:
