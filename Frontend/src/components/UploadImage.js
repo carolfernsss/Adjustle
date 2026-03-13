@@ -288,8 +288,8 @@ const UploadImage = function (props) {
 
                     {/* 4. Total Students */}
                     <div className="input-group" id="input-total-students">
-                        <label className="input-label"><Users size={14} /> Students</label>
-                        <input type="number" value={totalStudents} onChange={(e) => setTotalStudents(Number(e.target.value))} className="upload-input" />
+                        <label className="input-label"><Users size={14} /> Students (max 250)</label>
+                        <input type="number" value={totalStudents} min={1} max={250} onChange={(e) => setTotalStudents(Number(e.target.value))} className="upload-input" />
                     </div>
 
                     <div className="action-row">

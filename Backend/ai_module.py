@@ -142,8 +142,8 @@ async def analyze_classroom_image(
     branch: str = "BCA",
     timeslot: Optional[str] = None
 ):
-    # Enforce student count limits (1 to 150)
-    totalstudents = max(1, min(150, totalstudents))
+    # Enforce student count limits (1 to 250)
+    totalstudents = max(1, min(250, totalstudents))
 
     start_time = time.time()
 
@@ -157,78 +157,135 @@ async def analyze_classroom_image(
     if img is None:
         raise HTTPException(status_code=400, detail="Image could not be decoded")
 
-    # --- Tile-based multi-scale detection for dense group photos ---
-    # Standard single-pass detection with IOU=0.5 suppresses ~60% of valid
-    # detections in dense crowds because overlapping bounding boxes are wrongly
-    # treated as duplicates. This tile approach detects at full res per region.
+    # ---------------------------------------------------------------
+    # Reliable pure-numpy NMS (avoids cv2.dnn.NMSBoxes API differences)
+    # ---------------------------------------------------------------
+    def numpy_nms(boxes, confs, iou_threshold=0.25):
+        """NMS on [x1,y1,x2,y2] boxes, returns kept indices."""
+        if len(boxes) == 0:
+            return []
+        boxes = np.array(boxes, dtype=np.float32)
+        confs = np.array(confs, dtype=np.float32)
+        order = confs.argsort()[::-1]
+        keep = []
+        while order.size > 0:
+            i = order[0]
+            keep.append(i)
+            if order.size == 1:
+                break
+            rest = order[1:]
+            xx1 = np.maximum(boxes[i, 0], boxes[rest, 0])
+            yy1 = np.maximum(boxes[i, 1], boxes[rest, 1])
+            xx2 = np.minimum(boxes[i, 2], boxes[rest, 2])
+            yy2 = np.minimum(boxes[i, 3], boxes[rest, 3])
+            inter = np.maximum(0, xx2 - xx1) * np.maximum(0, yy2 - yy1)
+            area_i    = (boxes[i, 2]    - boxes[i, 0])    * (boxes[i, 3]    - boxes[i, 1])
+            area_rest = (boxes[rest, 2] - boxes[rest, 0]) * (boxes[rest, 3] - boxes[rest, 1])
+            iou = inter / (area_i + area_rest - inter + 1e-6)
+            order = rest[iou <= iou_threshold]
+        return keep
+
+    # ---------------------------------------------------------------
+    # METHOD 1: YOLO tile-based detection
+    # Sliding window so back-row people are seen at full resolution
+    # ---------------------------------------------------------------
     try:
         h, w = img.shape[:2]
-        TILE = 640
-        OVERLAP = 0.35  # 35% overlap between tiles to catch people at tile edges
-        stride = int(TILE * (1 - OVERLAP))
+        TILE    = 640
+        OVERLAP = 0.35
+        stride  = int(TILE * (1 - OVERLAP))
 
-        raw_boxes = []   # [x1, y1, x2, y2]
-        raw_confs = []
-        names = {0: "person"}
+        raw_yolo_boxes = []
+        raw_yolo_confs = []
 
-        # --- Full-image pass first (catches people at any scale) ---
+        # Full-image pass (broad context, catches large/mid-size people)
         res_full = yolo_model.predict(
-            img, classes=[0], conf=0.008, imgsz=1280,
-            iou=0.2, max_det=600, agnostic_nms=True, augment=True, verbose=False
+            img, classes=[0], conf=0.001, imgsz=1280,
+            iou=0.15, max_det=600, agnostic_nms=True, augment=True, verbose=False
         )
         for box in res_full[0].boxes:
             x1, y1, x2, y2 = box.xyxy[0].tolist()
-            raw_boxes.append([x1, y1, x2, y2])
-            raw_confs.append(float(box.conf[0]))
+            raw_yolo_boxes.append([x1, y1, x2, y2])
+            raw_yolo_confs.append(float(box.conf[0]))
 
-        # --- Tile pass: detect small/back-row people at high resolution ---
-        for y_start in range(0, h, stride):
-            for x_start in range(0, w, stride):
-                x_end = min(x_start + TILE, w)
-                y_end = min(y_start + TILE, h)
-                tile = img[y_start:y_end, x_start:x_end]
-
+        # Tile pass (catches small back-row people at high resolution)
+        for y0 in range(0, h, stride):
+            for x0 in range(0, w, stride):
+                tile = img[y0:min(y0+TILE, h), x0:min(x0+TILE, w)]
                 if tile.shape[0] < 64 or tile.shape[1] < 64:
                     continue
-
-                res_tile = yolo_model.predict(
-                    tile, classes=[0], conf=0.01, imgsz=640,
-                    iou=0.2, max_det=200, agnostic_nms=True, verbose=False
+                res_t = yolo_model.predict(
+                    tile, classes=[0], conf=0.001, imgsz=640,
+                    iou=0.15, max_det=200, agnostic_nms=True, verbose=False
                 )
-                for box in res_tile[0].boxes:
+                for box in res_t[0].boxes:
                     bx1, by1, bx2, by2 = box.xyxy[0].tolist()
-                    # Map tile coordinates back to full image coordinates
-                    raw_boxes.append([bx1 + x_start, by1 + y_start, bx2 + x_start, by2 + y_start])
-                    raw_confs.append(float(box.conf[0]))
+                    raw_yolo_boxes.append([bx1+x0, by1+y0, bx2+x0, by2+y0])
+                    raw_yolo_confs.append(float(box.conf[0]))
 
-        # --- Global NMS across all tile results to remove true duplicates ---
-        if raw_boxes:
-            boxes_np = np.array(raw_boxes, dtype=np.float32)
-            confs_np = np.array(raw_confs, dtype=np.float32)
-
-            # Use OpenCV NMSBoxes (IOU=0.25 strict to allow dense real people)
-            indices = cv2.dnn.NMSBoxes(
-                bboxes=[[int(b[0]), int(b[1]), int(b[2] - b[0]), int(b[3] - b[1])] for b in boxes_np],
-                scores=confs_np.tolist(),
-                score_threshold=0.01,
-                nms_threshold=0.25
-            )
-            if len(indices) > 0:
-                indices = indices.flatten()
-                final_boxes = boxes_np[indices]
-                final_confs = confs_np[indices]
-            else:
-                final_boxes = boxes_np
-                final_confs = confs_np
-        else:
-            final_boxes = np.array([])
-            final_confs = np.array([])
-
-        detected_count = len(final_boxes)
+        # Merge with global NMS at IOU=0.2 (keeps overlapping real people)
+        kept = numpy_nms(raw_yolo_boxes, raw_yolo_confs, iou_threshold=0.20)
+        yolo_boxes = np.array(raw_yolo_boxes, dtype=np.float32)[kept] if kept else np.array([])
+        yolo_confs = np.array(raw_yolo_confs, dtype=np.float32)[kept] if kept else np.array([])
+        yolo_count = len(yolo_boxes)
 
     except Exception as e:
-        print(f"Vision Processing Error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Intelligence module failed during processing.")
+        print(f"YOLO Error: {str(e)}")
+        yolo_boxes = np.array([])
+        yolo_confs = np.array([])
+        yolo_count = 0
+
+    # ---------------------------------------------------------------
+    # METHOD 2: Haar Cascade face detection
+    # Built into OpenCV, specifically tuned for group/crowd photos.
+    # Much better at catching dense rows of frontal faces than YOLO.
+    # ---------------------------------------------------------------
+    face_boxes  = []
+    face_count  = 0
+    try:
+        face_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        )
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray_eq = cv2.equalizeHist(gray)   # improves contrast for distant faces
+
+        # Two passes: tight (small minNeighbors) + loose (very permissive)
+        f_a = face_cascade.detectMultiScale(gray_eq, scaleFactor=1.05, minNeighbors=2, minSize=(15, 15))
+        f_b = face_cascade.detectMultiScale(gray,    scaleFactor=1.08, minNeighbors=3, minSize=(20, 20))
+
+        all_face_rects = []
+        if len(f_a) > 0:
+            all_face_rects.extend(f_a.tolist())
+        if len(f_b) > 0:
+            all_face_rects.extend(f_b.tolist())
+
+        # Convert [x,y,w,h] → [x1,y1,x2,y2] and NMS to remove duplicates
+        face_xyxy  = [[fx, fy, fx+fw, fy+fh] for fx, fy, fw, fh in all_face_rects]
+        face_c_arr = [0.6] * len(face_xyxy)
+        fkept = numpy_nms(face_xyxy, face_c_arr, iou_threshold=0.30)
+        face_boxes = [face_xyxy[i] for i in fkept]
+        face_count = len(face_boxes)
+    except Exception as e:
+        print(f"Face cascade error: {str(e)}")
+        face_count = 0
+
+    # ---------------------------------------------------------------
+    # Use whichever method found MORE people (they complement each other)
+    # ---------------------------------------------------------------
+    if face_count >= yolo_count:
+        # Faces win: draw face boxes on the image
+        detected_count = face_count
+        final_boxes = np.array(face_boxes, dtype=np.float32) if face_boxes else np.array([])
+        final_confs = np.array([0.6] * face_count, dtype=np.float32)
+        print(f"Face cascade won: {face_count} faces vs {yolo_count} YOLO bodies")
+    else:
+        # YOLO wins
+        detected_count = yolo_count
+        final_boxes = yolo_boxes
+        final_confs = yolo_confs
+        print(f"YOLO won: {yolo_count} bodies vs {face_count} faces")
+
+    print(f"Final count: {detected_count} (YOLO={yolo_count}, Faces={face_count})")
 
     # Calculate attendance based on detected count (people)
     attendance = (detected_count / totalstudents) * 100 if totalstudents > 0 else 0
@@ -242,7 +299,6 @@ async def analyze_classroom_image(
         conf = float(final_confs[i])
         detections.append({"text": "person", "confidence": round(conf, 2), "box": [int(x1), int(y1), int(x2), int(y2)]})
         cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-        cv2.putText(img, f"p {conf:.2f}", (int(x1), int(y1) - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 1)
 
     # print("Evaluating attendance rules")
 
