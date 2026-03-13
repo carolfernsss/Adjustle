@@ -157,10 +157,10 @@ async def analyze_classroom_image(
     if img is None:
         raise HTTPException(status_code=400, detail="Image could not be decoded")
 
-    # Pass 1: Maximum Precision (imgsz 1024) - High accuracy for counting distant students
+    # Pass 1: Maximum Precision (imgsz 1280) - Ultra-high resolution for zero-miss student counting
     try:
-        # Reduced confidence and increased resolution to ensure no student is missed even in large group photos
-        results = yolo_model(img, classes=[0], conf=0.08, imgsz=1024, iou=0.45, max_det=300, verbose=False)
+        # Pushing parameters to the absolute limit for accuracy in dense, high-capacity classrooms
+        results = yolo_model(img, classes=[0], conf=0.05, imgsz=1280, iou=0.5, max_det=500, agnostic_nms=True, verbose=False)
         person_boxes = results[0].boxes
         detected_count = len(person_boxes)
         
