@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 
-const API_BASE = process.env.REACT_APP_API_URL || "";
+import { API_BASE } from "../api_config";
 
 function Notifications(props) {
     const { role = "student", branch = "BCA" } = props;

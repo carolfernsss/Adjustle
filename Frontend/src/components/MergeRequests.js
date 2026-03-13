@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-const API_BASE = process.env.REACT_APP_API_URL || "";
+import { API_BASE } from "../api_config";
 
 /**
  * Unified Merge Requests component handling both global popups and list view in the sidebar.

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Check, Eye, EyeOff } from "lucide-react";
 import Timetable from "./Timetable";
+import { API_BASE } from "../api_config";
 import "../css/Login.css";
 
 // Component for rendering individual password validation criteria status
@@ -91,7 +92,7 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
   useEffect(() => {
     if (loggedIn) {
       // Synchronizes the latest reschedule notice data from the server
-      fetch((process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:8000') + "/reschedule")
+      fetch(API_BASE + "/reschedule")
         .then(res => res.json())
         .then(data => setReschedule(data.classes));
     }
@@ -111,7 +112,7 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
       return;
     }
 
-    fetch((process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:8000') + "/login", {
+    fetch(API_BASE + "/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

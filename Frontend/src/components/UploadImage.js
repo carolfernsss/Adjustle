@@ -16,7 +16,8 @@ import {
 import "../css/UploadImage.css";
 import "../css/Notification.css";
 
-const BACKEND_URL = process.env.REACT_APP_API_URL || "";
+import { API_BASE } from "../api_config";
+const BACKEND_URL = API_BASE;
 
 const UploadImage = function (props) {
     const onNavigate = props.onNavigate;

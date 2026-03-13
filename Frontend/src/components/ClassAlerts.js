@@ -16,7 +16,7 @@ const SUBJECT_MAPPING = {
     "DL": "Deep Learning"
 };
 
-const API_BASE = process.env.REACT_APP_API_URL || "";
+import { API_BASE } from "../api_config";
 
 // React component providing a consolidated view of instructional scheduling adjustments and status alerts
 const ClassAlerts = function (props) {
