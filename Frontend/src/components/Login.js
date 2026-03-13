@@ -3,6 +3,7 @@ import { Check, Eye, EyeOff } from "lucide-react";
 import Timetable from "./Timetable";
 import "../css/Login.css";
 
+// Component for rendering individual password validation criteria status
 function PasswordRequirement({ isValid, successText, failText }) {
   let containerClass = "requirement";
   if (isValid) {
@@ -26,16 +27,16 @@ function PasswordRequirement({ isValid, successText, failText }) {
   );
 }
 
+// Primary Login component managing user authentication state and interface
 function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsername: setGlobalUsername }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [reschedule, setReschedule] = useState([]);
   const [selectedRole, setSelectedRole] = useState("student");
-
   const [showPassword, setShowPassword] = useState(false);
 
-  // Binary Rain Effect
+  // Implements the background matrix animation effect using the Canvas API
   useEffect(() => {
     if (loggedIn) return;
 
@@ -59,7 +60,7 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
       ctx.fillStyle = "#0000000d";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = "#d9bc944c"; // subtle gold
+      ctx.fillStyle = "#d9bc944c"; // subtle gold color
       ctx.font = fontSize + "px monospace";
 
       for (let i = 0; i < drops.length; i++) {
@@ -89,20 +90,21 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
 
   useEffect(() => {
     if (loggedIn) {
-      // Fetch reschedule data
+      // Synchronizes the latest reschedule notice data from the server
       fetch((process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:8000') + "/reschedule")
         .then(res => res.json())
         .then(data => setReschedule(data.classes));
-
     }
   }, [loggedIn]);
 
+  // Validates password complexity against predefined security regular expressions
   function validatePassword(pass) {
     // 1 uppercase, 1 lowercase, 1 number, 1 special char, min 5 chars
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{5,}$/;
     return regex.test(pass);
   }
 
+  // Orchestrates the login request and manages subsequent state updates
   function handleLogin() {
     if (!validatePassword(password)) {
       setError("Password must contain 1 uppercase, 1 lowercase, 1 number, 1 special char, and be at least 5 chars long.");
@@ -111,14 +113,16 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
 
     fetch((process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:8000') + "/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ username, password, role: selectedRole })
     })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
           setLoggedIn(true);
-          // Set role and branch based on backend response, not hardcoded selection mapping
+
           if (data.role && setRole) setRole(data.role);
           if (data.branch && setBranch) setBranch(data.branch);
           if (setGlobalUsername) setGlobalUsername(username);
@@ -140,7 +144,6 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
   if (loggedIn) {
     return (
       <div className="page-container wide">
-
         <div className="dashboard-grid layout-fix">
           <div className="dashboard-section timetable-section">
             <h2>{username ? username.toUpperCase() + "'S " : ""}TIMETABLE</h2>
@@ -167,13 +170,26 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
     <div className="login-page">
       <canvas id="binary-canvas" className="matrix-canvas"></canvas>
       <div className="scan-layer"></div>
+
       <div className="levitation-wrapper">
         <div className="login-card">
           <h2>LOGIN</h2>
 
           <div className="role-toggle" style={{ marginBottom: '15px' }}>
-            <button className={(() => { if (selectedRole === "teacher") return "active"; return ""; })()} type="button" onClick={() => setSelectedRole("teacher")}>Teacher</button>
-            <button className={(() => { if (selectedRole === "student") return "active"; return ""; })()} type="button" onClick={() => setSelectedRole("student")}>Student</button>
+            <button
+              className={(() => { if (selectedRole === "teacher") return "active"; return ""; })()}
+              type="button"
+              onClick={() => setSelectedRole("teacher")}
+            >
+              Teacher
+            </button>
+            <button
+              className={(() => { if (selectedRole === "student") return "active"; return ""; })()}
+              type="button"
+              onClick={() => setSelectedRole("student")}
+            >
+              Student
+            </button>
           </div>
 
           <div className="login-section">

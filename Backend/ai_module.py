@@ -15,7 +15,7 @@ load_dotenv()
 
 # Load configurations from environment variables
 YOLO_MODEL_PATH = os.getenv("YOLO_MODEL_PATH", "yolov8n.pt")
-RESULTS_DIR = os.getenv("RESULTS_DIR", "static/results")
+RESULTS_DIR = os.getenv("RESULTS_DIR", "backend_static/results")
 ATTEND_LOW = int(os.getenv("ATTENDANCE_LOW", "30"))
 ATTEND_MEDIUM = int(os.getenv("ATTENDANCE_MEDIUM", "40"))
 ATTEND_HIGH = int(os.getenv("ATTENDANCE_HIGH", "60"))

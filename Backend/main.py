@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 import logging
+from pathlib import Path
 
 # Silence uvicorn access logs but keep essential startup information
 logging.getLogger("uvicorn").setLevel(logging.INFO)
@@ -88,9 +89,6 @@ def root():
 def health_check():
     return {"status": "healthy"}
 
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-
+# // Serve the React frontend build directory as static files at the root
 frontend_path = Path(__file__).resolve().parent.parent / "Frontend" / "build"
-
 app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")

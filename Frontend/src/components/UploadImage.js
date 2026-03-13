@@ -144,7 +144,7 @@ const UploadImage = function (props) {
             setResultData(data);
             setSuggestedAction(data.suggested_action);
             if (data.output_filename) {
-                setResultImageUrl(BACKEND_URL + "/static/results/" + data.output_filename + "?t=" + Date.now());
+                setResultImageUrl(BACKEND_URL + "/backend_static/results/" + data.output_filename + "?t=" + Date.now());
             }
         } catch (err) {
             setError("Analysis failed. Please try again.");

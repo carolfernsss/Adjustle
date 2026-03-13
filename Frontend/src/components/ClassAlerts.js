@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect } from "react";
 import "../css/ClassAlerts.css";
 
-// This mapping helps us show the full formal name of subjects instead of short codes
+// Defines a static mapping for translating abbreviated subject identifiers into comprehensive academic nomenclature
 const SUBJECT_MAPPING = {
     "AI": "Artificial Intelligence",
     "IoT": "Internet of Things",
@@ -18,7 +18,7 @@ const SUBJECT_MAPPING = {
 
 const API_BASE = process.env.REACT_APP_API_URL || "";
 
-// Component to display current schedule alerts and status updates for the classes
+// React component providing a consolidated view of instructional scheduling adjustments and status alerts
 const ClassAlerts = function (props) {
     const { selectedDay, role, onScheduleChange, branch, refreshTrigger } = props;
     const [alerts, setAlerts] = useState([]);
@@ -26,28 +26,28 @@ const ClassAlerts = function (props) {
     const [showPermanentModal, setShowPermanentModal] = useState(false);
     const [showRevertModal, setShowRevertModal] = useState(false);
 
-    // Logic to fetch the latest schedule alerts and format them for the display
+    // Implements an asynchronous data retrieval pattern to synchronize local state with remote scheduling records
     const fetchAlerts = useCallback(function () {
         const branchParam = branch || "BCA";
-        const alertUrl = API_BASE + "/reschedule?branch=" + branchParam;
-        const timetableUrl = API_BASE + "/timetable?revised=false&branch=" + branchParam;
+        const alertUrl = `${API_BASE}/reschedule?branch=${branchParam}`;
+        const timetableUrl = `${API_BASE}/timetable?revised=false&branch=${branchParam}`;
 
         Promise.all([
-            fetch(alertUrl).then(function (res) { return res.json(); }),
-            fetch(timetableUrl).then(function (res) { return res.json(); })
+            fetch(alertUrl).then(res => res.json()),
+            fetch(timetableUrl).then(res => res.json())
         ])
-            .then(function ([alertData, timetableData]) {
-                // 1. Process active alerts
+            .then(([alertData, timetableData]) => {
+                // 1. Process active alerts first
                 let fetchedClasses = [];
                 if (alertData.classes) {
-                    fetchedClasses = alertData.classes.filter(function (c) { return c.is_active !== false; });
+                    fetchedClasses = alertData.classes.filter(c => c.is_active !== false);
                 }
 
                 // 2. Identify all possible subjects for this course from the timetable grid
                 const courseSubjects = new Set();
                 if (timetableData.schedule) {
-                    timetableData.schedule.forEach(function (day) {
-                        day.times.forEach(function (slot) {
+                    timetableData.schedule.forEach(day => {
+                        day.times.forEach(slot => {
                             if (slot.name && slot.name !== "LUNCH" && slot.name !== "") {
                                 courseSubjects.add(slot.name);
                             }
@@ -84,7 +84,7 @@ const ClassAlerts = function (props) {
                         cssClass = "alert-green";
                         priority = 1;
                     } else if (cls.status === "Rescheduled" || cls.status === "Delayed" || cls.status === "Merged") {
-                        statusLabel = "RESCHEDULED"; // Simplified as per user request
+                        statusLabel = "RESCHEDULED";
                         cssClass = "alert-red";
                         priority = 3;
                     } else if (cls.status === "Cancelled") {
@@ -103,8 +103,8 @@ const ClassAlerts = function (props) {
                     }
                 });
 
-                setAlerts(Object.values(uniqueMap).sort(function (a, b) {
-                    return b.priority - a.priority; // Show urgent alerts at the top
+                setAlerts(Object.values(uniqueMap).sort((a, b) => {
+                    return b.priority - a.priority; // Show urgent alerts at top
                 }));
             })
             .catch(function (err) {
@@ -112,21 +112,24 @@ const ClassAlerts = function (props) {
             });
     }, [branch]);
 
+    // Establishes a periodic synchronization interval to maintain live schedule awareness
     useEffect(function () {
         fetchAlerts();
 
-        const pollInterval = setInterval(function () {
+        const pollInterval = setInterval(() => {
             fetchAlerts();
         }, 30000);
 
-        return function () {
+        return () => {
             clearInterval(pollInterval);
         };
     }, [fetchAlerts, refreshTrigger]);
 
+    // Logic to resolve and display the specific instructional schedule for a selected calendar date
     if (selectedDay) {
         const dayMap = {
-            "MON": "MONDAY", "TUE": "TUESDAY", "WED": "WEDNESDAY", "THU": "THURSDAY", "FRI": "FRIDAY", "SAT": "SATURDAY"
+            "MON": "MONDAY", "TUE": "TUESDAY", "WED": "WEDNESDAY",
+            "THU": "THURSDAY", "FRI": "FRIDAY", "SAT": "SATURDAY"
         };
         const selectedDayUpper = selectedDay.day.toUpperCase();
         let displayDay = selectedDayUpper;
@@ -143,10 +146,7 @@ const ClassAlerts = function (props) {
                 if (cls.status === "On Schedule") {
                     statusClass = "alert-green";
                     statusText = "ON SCHEDULE";
-                } else if (cls.status === "Rescheduled") {
-                    statusClass = "alert-red";
-                    statusText = "RESCHEDULED";
-                } else if (cls.status === "Delayed") {
+                } else if (cls.status === "Rescheduled" || cls.status === "Delayed") {
                     statusClass = "alert-red";
                     statusText = "RESCHEDULED";
                 } else if (cls.status === "Merged") {
@@ -161,7 +161,7 @@ const ClassAlerts = function (props) {
                     <div
                         key={index}
                         className="alert-item"
-                        onClick={function () {
+                        onClick={() => {
                             if (role && role.toLowerCase() === 'teacher' && cls.status !== "On Schedule") {
                                 setConfirmSubject(cls.subject);
                                 setShowPermanentModal(true);
@@ -207,6 +207,7 @@ const ClassAlerts = function (props) {
                 <div className="class-alerts-list">
                     {classListContent}
                 </div>
+
                 {showPermanentModal && (
                     <div className="modal-overlay" style={{
                         position: 'fixed',
@@ -229,16 +230,17 @@ const ClassAlerts = function (props) {
                             <p style={{ color: '#e8d4b8', marginBottom: '25px', lineHeight: '1.5' }}>
                                 Would you like to make the new schedule for <strong>{confirmSubject}</strong> permanent?
                             </p>
+
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
                                 <button
                                     className="button primary"
-                                    onClick={function () {
-                                        fetch(API_BASE + "/make_permanent", {
+                                    onClick={() => {
+                                        fetch(`${API_BASE}/make_permanent`, {
                                             method: "POST",
                                             headers: { "Content-Type": "application/json" },
                                             body: JSON.stringify({ subject: confirmSubject })
                                         })
-                                            .then(function () {
+                                            .then(() => {
                                                 if (onScheduleChange) onScheduleChange();
                                                 setShowPermanentModal(false);
                                             });
@@ -257,7 +259,7 @@ const ClassAlerts = function (props) {
                                 </button>
                                 <button
                                     className="button secondary"
-                                    onClick={function () { setShowPermanentModal(false); }}
+                                    onClick={() => setShowPermanentModal(false)}
                                     style={{
                                         padding: '8px 24px',
                                         backgroundColor: 'transparent',
@@ -273,6 +275,7 @@ const ClassAlerts = function (props) {
                         </div>
                     </div>
                 )}
+
                 {showRevertModal && (
                     <div className="modal-overlay" style={{
                         position: 'fixed',
@@ -298,13 +301,13 @@ const ClassAlerts = function (props) {
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
                                 <button
                                     className="button primary"
-                                    onClick={function () {
-                                        fetch(API_BASE + "/reset_subject", {
+                                    onClick={() => {
+                                        fetch(`${API_BASE}/reset_subject`, {
                                             method: "POST",
                                             headers: { "Content-Type": "application/json" },
                                             body: JSON.stringify({ subject: confirmSubject })
                                         })
-                                            .then(function () {
+                                            .then(() => {
                                                 if (onScheduleChange) onScheduleChange();
                                                 setShowRevertModal(false);
                                             });
@@ -323,7 +326,7 @@ const ClassAlerts = function (props) {
                                 </button>
                                 <button
                                     className="button secondary"
-                                    onClick={function () { setShowRevertModal(false); }}
+                                    onClick={() => setShowRevertModal(false)}
                                     style={{
                                         padding: '8px 24px',
                                         backgroundColor: 'transparent',
@@ -343,6 +346,7 @@ const ClassAlerts = function (props) {
         );
     }
 
+    // Returns the primary interface for non-day-specific class status notifications
     return (
         <div className="dashboard-section animate-up" id="class-alerts-sidebar" style={{ minHeight: '300px' }}>
             <h3 className="class-alerts-title">ALL CLASSES</h3>
@@ -352,7 +356,7 @@ const ClassAlerts = function (props) {
                         <div
                             key={index}
                             className="alert-item"
-                            onClick={function () {
+                            onClick={() => {
                                 if (role && role.toLowerCase() === 'teacher' && alert.status !== "ON SCHEDULE") {
                                     setConfirmSubject(alert.subject);
                                     setShowPermanentModal(true);
@@ -394,13 +398,13 @@ const ClassAlerts = function (props) {
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
                                 <button
                                     className="button primary"
-                                    onClick={function () {
-                                        fetch(API_BASE + "/make_permanent", {
+                                    onClick={() => {
+                                        fetch(`${API_BASE}/make_permanent`, {
                                             method: "POST",
                                             headers: { "Content-Type": "application/json" },
                                             body: JSON.stringify({ subject: confirmSubject })
                                         })
-                                            .then(function () {
+                                            .then(() => {
                                                 if (onScheduleChange) onScheduleChange();
                                                 setShowPermanentModal(false);
                                             });
@@ -419,7 +423,7 @@ const ClassAlerts = function (props) {
                                 </button>
                                 <button
                                     className="button secondary"
-                                    onClick={function () { setShowPermanentModal(false); }}
+                                    onClick={() => setShowPermanentModal(false)}
                                     style={{
                                         padding: '8px 24px',
                                         backgroundColor: 'transparent',
@@ -441,4 +445,3 @@ const ClassAlerts = function (props) {
 };
 
 export default ClassAlerts;
-
