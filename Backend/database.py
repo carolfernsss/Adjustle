@@ -956,9 +956,7 @@ async def _seed_schedule_alerts():
 async def update_occupancy(subject: str, count: int, day: str):
     # This records how many people were detected in a class for live monitoring
     # Points to the REVISED grid where the class is currently active
-    import logging
-    # Normalize day to Mon, Tue etc
-    d = (day or "Mon")[:3].title()
+    d = normalize_day(day)
     # print(f"DEBUG: Updating occupancy for {subject} on {d} to {count}")
     await db.execute(
         timetable_table.update().where(

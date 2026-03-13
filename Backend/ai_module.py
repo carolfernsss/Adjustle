@@ -139,7 +139,8 @@ async def analyze_classroom_image(
     subjectname: str = "AI",
     totalstudents: int = 40,
     dayofweek: str = "Monday",
-    branch: str = "BCA"
+    branch: str = "BCA",
+    timeslot: Optional[str] = None
 ):
     # Enforce student count limits (1 to 150)
     totalstudents = max(1, min(150, totalstudents))
@@ -156,19 +157,23 @@ async def analyze_classroom_image(
     if img is None:
         raise HTTPException(status_code=400, detail="Image could not be decoded")
 
-    # Pass 1: Detect People
-    results = yolo_model(img, classes=[0], conf=0.15, imgsz=1280, iou=0.5, max_det=150, verbose=False)
-    person_boxes = results[0].boxes
-    detected_count = len(person_boxes)
-    
-    current_boxes = person_boxes
-    names = results[0].names
-    
-    # Pass 2: Fallback if no people detected (Detect anything)
-    if detected_count == 0:
-        results_all = yolo_model(img, classes=None, conf=0.15, imgsz=1280, iou=0.5, max_det=150, verbose=False)
-        current_boxes = results_all[0].boxes
-        names = results_all[0].names
+    # Pass 1: Detect People - Using 640 for hardware efficiency on Render
+    try:
+        results = yolo_model(img, classes=[0], conf=0.15, imgsz=640, iou=0.5, max_det=150, verbose=False)
+        person_boxes = results[0].boxes
+        detected_count = len(person_boxes)
+        
+        current_boxes = person_boxes
+        names = results[0].names
+        
+        # Pass 2: Fallback if no people detected (Detect anything)
+        if detected_count == 0:
+            results_all = yolo_model(img, classes=None, conf=0.15, imgsz=640, iou=0.5, max_det=150, verbose=False)
+            current_boxes = results_all[0].boxes
+            names = results_all[0].names
+    except Exception as e:
+        print(f"Vision Processing Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Intelligence module failed during processing.")
     
     # Calculate attendance based on detected count (people)
     attendance = (detected_count / totalstudents) * 100 if totalstudents > 0 else 0
