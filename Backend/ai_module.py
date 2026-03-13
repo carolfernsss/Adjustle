@@ -1,4 +1,4 @@
-# AI Module for person detection using YOLO
+# ai processing using yolo model
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import os
 import time
@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
 
-# // Load environment properties for model path and detection directories
+# loading environment variables
 load_dotenv()
 
 # Load configurations from environment variables
@@ -20,16 +20,16 @@ ATTEND_LOW = int(os.getenv("ATTENDANCE_LOW", "30"))
 ATTEND_MEDIUM = int(os.getenv("ATTENDANCE_MEDIUM", "40"))
 ATTEND_HIGH = int(os.getenv("ATTENDANCE_HIGH", "60"))
 
-# // Initialize the FastAPI router for processing AI related requests
+# setting up the fastapi router
 ai_router = APIRouter()
 
-# // Load the YOLOv8 model for computer vision based person detection
+# loading the detection model
 yolo_model = YOLO(YOLO_MODEL_PATH)
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 
-# // Data model for receiving and validating schedule change requests from the UI
+# structure for schedule update requests
 class ScheduleChangeRequest(BaseModel):
     subject: str
     status: str
@@ -45,7 +45,7 @@ class ScheduleChangeRequest(BaseModel):
     present_count: Optional[int] = 0
 
 
-# // Endpoint targeted when a teacher manually approves an AI suggested schedule change
+# function to save approved schedule changes
 @ai_router.post("/approve_schedule_change")
 async def commit_schedule_change(req: ScheduleChangeRequest):
     # Commit the proposed schedule changes from AI module
@@ -132,7 +132,7 @@ async def commit_schedule_change(req: ScheduleChangeRequest):
     return {"success": True, "message": "Changes approved.", "updated_subject": resolved_subject}
 
 
-# // Main processing endpoint that accepts a classroom image and counts the students
+# main function for image counting
 @ai_router.post("/count")
 async def analyze_classroom_image(
     imagefile: UploadFile = File(...),
@@ -179,7 +179,7 @@ async def analyze_classroom_image(
     # Calculate attendance based on detected count (people)
     attendance = (detected_count / totalstudents) * 100 if totalstudents > 0 else 0
     
-    # // Updating the live occupancy status in the shared database grid
+    # saving the count to database
     await update_occupancy(subjectname, detected_count, dayofweek)
 
     detections = []
@@ -195,7 +195,7 @@ async def analyze_classroom_image(
 
     # print("Evaluating attendance rules")
 
-    # Antigravity Attendance Decision Rules
+    # rules for attendance decisions
     P = detected_count
     T = totalstudents
     A = attendance
@@ -205,7 +205,7 @@ async def analyze_classroom_image(
     student_msg = ""
     teacher_msg_reason = ""
 
-    # Step 1: Minimum Headcount Overrides
+    # checking minimum headcount
     if P < 8:
         status = "Rescheduled"
         teacher_msg_reason = f"Attendance at {A:.1f}% (Too low)."
@@ -213,7 +213,7 @@ async def analyze_classroom_image(
         status = "Merged"
         teacher_msg_reason = f"Attendance at {A:.1f}%."
     else:
-        # Step 2: Apply Rules by Class Size
+        # checking rules based on class size
         if T <= 50:
             if A >= 75:
                 status = "On Schedule"
@@ -239,7 +239,7 @@ async def analyze_classroom_image(
                 status = "Rescheduled"
                 teacher_msg_reason = f"Attendance at {A:.1f}% (Too low)."
 
-    # Step 3: Global System Optimization (Shared Resources)
+    # checking for shared resources
     is_shared = await is_subject_shared(subjectname)
     
     # SYSTEM OVERRIDE: If any subject is shared between timetables (e.g. AI, IoT, Internship), 
@@ -252,7 +252,7 @@ async def analyze_classroom_image(
     if status == "Merged" and not is_shared:
         status = "Rescheduled"
 
-    # // Constructing the appropriate notification or action based on the decision
+    # creating notifications based on result
     if status == "On Schedule":
         suggestion = None
     elif status == "Delayed":

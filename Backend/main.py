@@ -7,7 +7,7 @@ import os
 import logging
 from pathlib import Path
 
-# Silence uvicorn access logs but keep essential startup information
+# making the logs less messy
 logging.getLogger("uvicorn").setLevel(logging.INFO)
 logging.getLogger("uvicorn.error").setLevel(logging.INFO)
 logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
@@ -37,11 +37,11 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    # Only keep critical messages as requested
+    # printing startup messages
     print("Database is initializing...")
     await init_db()
     
-    # Seed default users
+    # adding default login accounts
     default_users = [
         {"username": "BCATeacher", "password": "Teacher123@", "branch": "BCA", "role": "teacher"},
         {"username": "BCADATeacher", "password": "Teacher123@", "branch": "BCADA", "role": "teacher"},
@@ -61,11 +61,11 @@ async def startup_event():
 async def shutdown_event():
     await close_db()
 
-# // Ensure the static directory exists for storing uploaded images and results
+# making folders for image results
 os.makedirs("backend_static/results", exist_ok=True)
 app.mount("/backend_static", StaticFiles(directory="backend_static"), name="backend_static")
 
-# // Include all the sub-routers for different modules of the application
+# connecting all the different api parts
 app.include_router(auth_router, tags=["Authentication"])
 app.include_router(scheduling_router, tags=["Scheduling"])
 app.include_router(ai_router, tags=["AI Module"])
@@ -89,6 +89,6 @@ def root():
 def health_check():
     return {"status": "healthy"}
 
-# // Serve the React frontend build directory as static files at the root
+# showing the react pages from the build folder
 frontend_path = Path(__file__).resolve().parent.parent / "Frontend" / "build"
 app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")

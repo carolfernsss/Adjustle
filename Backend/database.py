@@ -1,4 +1,4 @@
-# // Import the required libraries for database and system operations
+# getting tools for database and systems
 import os
 import re
 from datetime import datetime
@@ -10,7 +10,7 @@ from sqlalchemy import (
 )
 from databases import Database
 
-# Load environment variables (like the database URL)
+# loading variables from .env file
 load_dotenv()
 
 DATABASE_CONN_URL = os.getenv("DATABASE_URL")
@@ -21,13 +21,13 @@ if not DATABASE_CONN_URL:
         "Please configure your PostgreSQL connection in the .env file."
     )
 
-# // Initialize the database connection using the provided configuration URL
+# starting the database connection
 db = Database(DATABASE_CONN_URL)
 metadata = MetaData()
 
 # Table definitions for the system
 
-# // Define the table structure for storing user account information
+# table for user accounts
 users_table = Table(
     "users",
     metadata,
@@ -108,7 +108,7 @@ class UserProfile(BaseModel):
     email: Optional[str] = None
     role: str = "student"
 
-# // Class model for representing a single schedule record in our system
+# format for schedule data
 class ScheduleRecord(BaseModel):
     classid: int
     subject: str
@@ -173,7 +173,7 @@ subject_family_map = {
 }
 
 
-# // Helper function to clean the subject name and remove any unwanted characters or IDs
+# cleaning up subject names
 def normalize_subject_token(subject_text: str) -> str:
     if not subject_text:
         return ""
@@ -183,13 +183,13 @@ def normalize_subject_token(subject_text: str) -> str:
     return token
 
 
-# // Function to find the group/category that a particular subject belongs to
+# finding the category of a subject
 def get_subject_family(subject_text: str) -> str:
     token = normalize_subject_token(subject_text)
     return subject_family_map.get(token, token)
 
 
-# // Logic to match a raw subject input to its actual database instance based on the day
+# matching subject names to the database
 def resolve_subject_instance(subject_input: str, target_day: Optional[str]) -> Optional[str]:
     normalized_day = normalize_day(target_day) if target_day else None
     requested_family = get_subject_family(subject_input)
@@ -228,7 +228,7 @@ async def is_subject_shared(subject_name: str) -> bool:
     family = get_subject_family(subject_name)
     return family in bca_subjects and family in bcada_subjects
 
-# // Asynchronous function to search for a specific user record in the users table
+# searching for a user in the table
 async def find_user(target_username: str) -> Optional[dict]:
     # Finds a user by their username (case-insensitive). 
     # print(f"DEBUG: Looking for user '{target_username}'...")
@@ -240,7 +240,7 @@ async def find_user(target_username: str) -> Optional[dict]:
 
     return None
 
-# // Utility to convert long day names to shortened 3-letter strings for internal use
+# fixing day names to match
 def normalize_day(day_name: str) -> str:
     # Converts full day names to long form (e.g., 'Mon' -> 'Monday')
     mapping = {
@@ -251,7 +251,7 @@ def normalize_day(day_name: str) -> str:
     return mapping.get(day_name.lower(), day_name)
 
 
-# // Simple logic to pick the next available teaching day after a specific day
+# picking a new day for classes
 def choose_reschedule_day(source_day: str) -> str:
     # Always picks the next chronological day (forward in time)
     days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -267,7 +267,7 @@ def choose_reschedule_day(source_day: str) -> str:
     return None
 
 
-# // Algorithm to find the most optimal empty time slot in a day for classes
+# finding an empty time slot
 def find_smart_slot_for_day(records: List[dict], day: str, ignore_subject: Optional[str] = None, required_slots: int = 1) -> Optional[str]:
     # This finds the best slot to pack the schedule "one before another"
     taken_indices = []
@@ -330,6 +330,7 @@ def find_smart_slot_for_day(records: List[dict], day: str, ignore_subject: Optio
     return time_slots[candidates[0][0]]
 
 
+# clearing a subject from the new grid
 async def clear_subject_from_revised_grid(subject_id: str):
     await db.execute(
         timetable_table.update().where(
@@ -339,6 +340,7 @@ async def clear_subject_from_revised_grid(subject_id: str):
     )
 
 
+# putting a subject back to its old spot
 async def reset_subject_revised_position(subject_id: str):
     original_positions = await db.fetch_all(
         timetable_table.select().where(
@@ -360,6 +362,7 @@ async def reset_subject_revised_position(subject_id: str):
         )
 
 
+# moving a subject to a new spot in the grid
 async def apply_subject_change_to_revised_grid(subject_id: str, new_status: str, source_day: Optional[str] = None):
     normalized_source_day = normalize_day(source_day) if source_day else None
 
@@ -468,6 +471,7 @@ async def apply_subject_change_to_revised_grid(subject_id: str, new_status: str,
 
 # --- SCHEDULING AND NOTIFICATIONS FUNCTIONS ---
 
+# getting all the class schedules
 async def get_all_schedules(branch: Optional[str] = "BCA") -> List[dict]:
     # Filter by branch if specified
     query = schedule_table.select().where(
@@ -477,6 +481,7 @@ async def get_all_schedules(branch: Optional[str] = "BCA") -> List[dict]:
     records = await db.fetch_all(query)
     return [dict(r) for r in records]
 
+# getting all the notifications
 async def get_notifs(branch: str = "BCA") -> List[dict]:
     query = notifications_table.select().where(notifications_table.c.branch == branch).order_by(notifications_table.c.id.desc())
     records = await db.fetch_all(query)
@@ -511,6 +516,7 @@ async def get_notifs(branch: str = "BCA") -> List[dict]:
         results.append(d)
     return results
 
+# adding a new notification
 async def add_notification(title: str, message: str, n_type: str, teacher_message: Optional[str] = None, branch: str = "BCA"):
     # Inserts a new notification into the database. 
     # title: notification title, message: body message for students, n_type: type of notification.
@@ -526,6 +532,7 @@ async def add_notification(title: str, message: str, n_type: str, teacher_messag
     )
     return await db.execute(query)
 
+# calculating how many weeks are left
 async def calculate_remaining_weeks(start_date_val: Optional[any], total_weeks: int = 2) -> str:
     if not start_date_val:
         return f"{total_weeks} weeks"
@@ -551,6 +558,7 @@ async def calculate_remaining_weeks(start_date_val: Optional[any], total_weeks: 
     except Exception:
         return f"{total_weeks} weeks"
 
+# updating a single class status
 async def update_schedule(subjectprefix: str, new_status: str, totalstudents: Optional[int] = None, target_day: Optional[str] = None, present_count: Optional[int] = None):
     # Updates exactly one schedule entry based on subject + day.
     normalized_day = normalize_day(target_day) if target_day else None
@@ -624,6 +632,7 @@ async def update_schedule(subjectprefix: str, new_status: str, totalstudents: Op
 
     return resolved_subject
 
+# resetting a class to its original state
 async def reset_subject_schedule(subject_name: str):
     # This function reverts a specific subject family to its original state
     # print(f"DEBUG: Manually resetting schedule for subject: {subject_name}")
@@ -643,6 +652,7 @@ async def reset_subject_schedule(subject_name: str):
             # 2. Reset its position in the revised grid
             await reset_subject_revised_position(a_dict["subject"])
 
+# making a schedule change permanent
 async def make_schedule_permanent(subject_name: str):
     # This function marks a subject change as the new 'normal' (permanent)
     # 1. Find the current position in the REVISED grid
@@ -676,6 +686,7 @@ async def make_schedule_permanent(subject_name: str):
                 ).values(status="On Schedule", is_active=False, original_time=None, new_time=None, test_period_start=None)
             )
 
+# deleting all notifications
 async def clear_all_notifications():
     # print("DEBUG: Clearing all notifications...")
     query = notifications_table.delete()
@@ -686,6 +697,7 @@ async def clear_notifications_by_branch(branch: str):
     query = notifications_table.delete().where(notifications_table.c.branch == branch)
     await db.execute(query)
 
+# cancelling a specific class
 async def cancel_class(target_subject: str, target_day: str):
     # print(f"DEBUG: Cancelling class '{target_subject}' on {target_day}...")
     # 1. Check if a record already exists for this class AND day
@@ -726,6 +738,7 @@ async def cancel_class(target_subject: str, target_day: str):
 
 # --- Global Control Operations ---
 
+# clearing all modified schedules
 async def reset_all_schedules():
     # 1. Hide all status alerts
     query = schedule_table.update().values(is_active=False)
@@ -751,6 +764,7 @@ async def reset_all_schedules():
     
     await db.execute_many(timetable_table.insert(), entries)
 
+# putting back all modified schedules
 async def restore_all_schedules():
     # 1. Restore status alerts
     query = schedule_table.update().values(is_active=True)
@@ -778,6 +792,7 @@ async def restore_all_schedules():
 
 # --- Timetable Grid Operations ---
 
+# getting the timetable grid data
 async def get_timetable_data(is_revised: bool = False, branch: Optional[str] = "BCA") -> List[dict]:
     # print(f"DEBUG: Fetching timetable data (revised={is_revised})...")
     conditions = [timetable_table.c.is_revised == is_revised]
@@ -788,6 +803,7 @@ async def get_timetable_data(is_revised: bool = False, branch: Optional[str] = "
     records = await db.fetch_all(query)
     return [dict(r) for r in records]
 
+# filling the grid with starting data
 async def _seed_timetable_grid():
     await db.execute(timetable_table.delete())
     
@@ -813,6 +829,7 @@ async def _seed_timetable_grid():
     await db.execute_many(timetable_table.insert(), entries_to_insert)
     # print("Timetable seeded successfully!")
 
+# calculating status alerts for everyone
 async def _seed_schedule_alerts():
     # print("DEBUG: Fetching and calculating schedule status alerts from database...")
     # 1. Fetch current schedule state to preserve attendance and test period data
@@ -953,6 +970,7 @@ async def _seed_schedule_alerts():
     await db.execute_many(schedule_table.insert(), alerts_to_insert)
     # print(f"Success: {len(alerts_to_insert)} alerts calculated and notifications broadcasted.")
 
+# updating the live count for a class
 async def update_occupancy(subject: str, count: int, day: str):
     # This records how many people were detected in a class for live monitoring
     # Points to the REVISED grid where the class is currently active
@@ -980,6 +998,7 @@ async def check_teacher_availability(branch: str, day: str, time_slot: str) -> O
         return result["subject"]
     return None
 
+# processing the merge approval or denial
 async def process_merge_response(notif_id: int, approved: bool):
     # Process the decision made by the recipient teacher
     # 1. Find the request
@@ -1071,8 +1090,7 @@ async def process_merge_response(notif_id: int, approved: bool):
 
 # --- Lifecycle Management ---
 
-# // Function to initialize and open the connection to the postgres database
-async def init_db():
+# starting the database connection
     engine = create_engine(DATABASE_CONN_URL)
     metadata.create_all(engine)
     await db.connect()

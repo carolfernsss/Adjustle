@@ -1,4 +1,4 @@
-# Scheduling logic and timetable management
+# code for managing class times
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
@@ -20,7 +20,7 @@ from Backend.database import (
     time_slots
 )
 
-# // Initialize the API router to handle all scheduling and timetable requests
+# setting up the setup for schedule requests
 scheduling_router = APIRouter()
 
 # --- Data Models ---
@@ -46,7 +46,7 @@ class NegotiateMergeRequest(BaseModel):
 
 # --- Helper Functions ---
 
-# // Logic to find a time slot where both classes are free at the same time
+# finding a time when both classes are free
 async def find_mutual_free_slot(branch_a: str, branch_b: str) -> Optional[str]:
     # Finds a common free slot between two branches in the REVISED grid
     grid_a = await get_timetable_data(is_revised=True, branch=branch_a)
@@ -77,7 +77,7 @@ async def find_mutual_free_slot(branch_a: str, branch_b: str) -> Optional[str]:
 
 # --- Endpoints ---
 
-# // API endpoint to get all merge requests that are waiting for approval or change
+# getting all the pending merge requests
 @scheduling_router.get("/pending_merges")
 async def get_pending_merges(branch: str = "BCA"):
     # Returns pending merge requests where the USER (branch) needs to act.
@@ -134,7 +134,7 @@ async def clear_merges(branch: str = "BCA"):
     
     return {"success": True, "message": "All pending merge requests have been cleared."}
 
-# // Endpoint that allows teachers to negotiate, approve or reject merge requests
+# letting teachers approve or reject merges
 @scheduling_router.post("/negotiate_merge")
 async def negotiate_merge(req: NegotiateMergeRequest):
     # Handles complex merge negotiation (Accept, Reject, Propose New Time)
@@ -245,7 +245,7 @@ async def negotiate_merge(req: NegotiateMergeRequest):
     return {"success": False, "message": "Invalid action"}
 
 
-# // Handle final responses to merge requests and update the status in database
+# saving the final merge decision
 @scheduling_router.post("/respond_to_merge")
 async def respond_to_merge(req: MergeResponseRequest):
     success, msg = await process_merge_response(req.notification_id, req.approved)
@@ -256,7 +256,7 @@ async def fetch_rescheduled_classes(branch: str = "BCA"):
     statuslist = await get_all_schedules(branch=branch)
     return {"classes": statuslist}
 
-# // REST API to fetch the full formatted grid for the timetable display
+# getting the full timetable display
 @scheduling_router.get("/timetable")
 async def retrieve_formatted_timetable(revised: bool = False, branch: str = "BCA"):
     # 1. Fetch raw records from database
