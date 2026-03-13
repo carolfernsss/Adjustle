@@ -157,17 +157,18 @@ async def analyze_classroom_image(
     if img is None:
         raise HTTPException(status_code=400, detail="Image could not be decoded")
 
-    # Pass 1: Maximum Accuracy (imgsz 800) with reasonable speed for group photos
+    # Pass 1: Maximum Precision (imgsz 1024) - High accuracy for counting distant students
     try:
-        results = yolo_model(img, classes=[0], conf=0.1, imgsz=800, iou=0.4, max_det=300, verbose=False)
+        # Reduced confidence and increased resolution to ensure no student is missed even in large group photos
+        results = yolo_model(img, classes=[0], conf=0.08, imgsz=1024, iou=0.45, max_det=300, verbose=False)
         person_boxes = results[0].boxes
         detected_count = len(person_boxes)
         
         current_boxes = person_boxes
         names = results[0].names
         
-        # Pass 2: Fallback if no people detected (Detect anything)
         if detected_count == 0:
+            # Only run fallback if absolutely needed to save time
             results_all = yolo_model(img, classes=None, conf=0.1, imgsz=800, iou=0.4, max_det=300, verbose=False)
             current_boxes = results_all[0].boxes
             names = results_all[0].names
@@ -238,15 +239,16 @@ async def analyze_classroom_image(
                 status = "Rescheduled"
                 teacher_msg_reason = f"Attendance at {A:.1f}% (Too low)."
 
-    # Step 3: Merge Restriction & Shared Subject Check
+    # Step 3: Global System Optimization (Shared Resources)
     is_shared = await is_subject_shared(subjectname)
-
-    # Force Merge for shared subjects if they were going to be Rescheduled
-    if is_shared and status == "Rescheduled":
-        status = "Merged"
-        teacher_msg_reason = f"Shared resource optimization. {teacher_msg_reason}"
     
-    # If not shared, we cannot merge (must reschedule instead)
+    # SYSTEM OVERRIDE: If any subject is shared between timetables (e.g. AI, IoT, Internship), 
+    # we NEVER reschedule if Merge is possible. We force the coordination request.
+    if is_shared and status in ["Rescheduled", "Delayed"]:
+        status = "Merged"
+        teacher_msg_reason = f"Institutional Shared Resource detected. {teacher_msg_reason}"
+    
+    # Final safety check: Cant merge a non-shared class
     if status == "Merged" and not is_shared:
         status = "Rescheduled"
 
