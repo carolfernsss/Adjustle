@@ -249,9 +249,9 @@ async def analyze_classroom_image(
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         gray_eq = cv2.equalizeHist(gray)   # improves contrast for distant faces
 
-        # Two passes: tight (small minNeighbors) + loose (very permissive)
-        f_a = face_cascade.detectMultiScale(gray_eq, scaleFactor=1.05, minNeighbors=2, minSize=(15, 15))
-        f_b = face_cascade.detectMultiScale(gray,    scaleFactor=1.08, minNeighbors=3, minSize=(20, 20))
+        # minNeighbors=3/4 balances recall vs false positives on wall posters etc.
+        f_a = face_cascade.detectMultiScale(gray_eq, scaleFactor=1.05, minNeighbors=3, minSize=(15, 15))
+        f_b = face_cascade.detectMultiScale(gray,    scaleFactor=1.08, minNeighbors=4, minSize=(20, 20))
 
         all_face_rects = []
         if len(f_a) > 0:
@@ -270,22 +270,51 @@ async def analyze_classroom_image(
         face_count = 0
 
     # ---------------------------------------------------------------
-    # Use whichever method found MORE people (they complement each other)
+    # Smart merge: YOLO as base + only cascade faces YOLO missed
+    #
+    # WHY: "take max" inflates count for small classes (Haar false-positives
+    # on posters/backgrounds). Cross-referencing by face-centre avoids this.
+    #
+    # Small class (20 people): YOLO≈18, cascade≈20 faces, almost all face
+    #   centres land inside a YOLO body box → extra_faces≈0 → total≈18-20 ✓
+    # Dense group (57 people): YOLO≈21, cascade≈50 faces, ~30 face centres
+    #   fall outside YOLO boxes (back rows YOLO missed) → total≈50 ✓
     # ---------------------------------------------------------------
-    if face_count >= yolo_count:
-        # Faces win: draw face boxes on the image
-        detected_count = face_count
-        final_boxes = np.array(face_boxes, dtype=np.float32) if face_boxes else np.array([])
-        final_confs = np.array([0.6] * face_count, dtype=np.float32)
-        print(f"Face cascade won: {face_count} faces vs {yolo_count} YOLO bodies")
+    extra_face_boxes = []
+    if face_boxes and len(yolo_boxes) > 0:
+        for fb in face_boxes:
+            fx1, fy1, fx2, fy2 = fb
+            fcx = (fx1 + fx2) / 2   # face centre x
+            fcy = (fy1 + fy2) / 2   # face centre y
+            covered = False
+            for yb in yolo_boxes:
+                yx1, yy1, yx2, yy2 = yb.tolist()
+                # Face centre inside (or near) the YOLO body box?
+                if yx1 <= fcx <= yx2 and yy1 <= fcy <= yy2:
+                    covered = True
+                    break
+            if not covered:
+                extra_face_boxes.append(fb)
+    elif face_boxes and len(yolo_boxes) == 0:
+        # YOLO found nothing at all – trust cascade fully
+        extra_face_boxes = face_boxes
+
+    extra_count = len(extra_face_boxes)
+
+    # Combine: YOLO bodies + uncovered cascade faces
+    detected_count = yolo_count + extra_count
+
+    # Merge box lists for visualisation
+    if extra_face_boxes:
+        extra_np = np.array(extra_face_boxes, dtype=np.float32)
+        extra_c  = np.full(extra_count, 0.55, dtype=np.float32)
+        final_boxes = np.concatenate([yolo_boxes, extra_np]) if len(yolo_boxes) > 0 else extra_np
+        final_confs = np.concatenate([yolo_confs, extra_c])  if len(yolo_confs) > 0 else extra_c
     else:
-        # YOLO wins
-        detected_count = yolo_count
         final_boxes = yolo_boxes
         final_confs = yolo_confs
-        print(f"YOLO won: {yolo_count} bodies vs {face_count} faces")
 
-    print(f"Final count: {detected_count} (YOLO={yolo_count}, Faces={face_count})")
+    print(f"Final: {detected_count} (YOLO={yolo_count} + CascadeExtra={extra_count}, faces_total={face_count})")
 
     # Calculate attendance based on detected count (people)
     attendance = (detected_count / totalstudents) * 100 if totalstudents > 0 else 0
