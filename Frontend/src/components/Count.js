@@ -5,6 +5,7 @@ import "../css/Count.css";
 
 function Count(props) {
     const onNavigate = props.onNavigate;
+    const onScheduleChange = props.onScheduleChange;
 
     // Generate stable random numbers for background animation
     const animNumbers = useMemo(() => {
@@ -30,7 +31,7 @@ function Count(props) {
                     </span>
                 ))}
             </div>
-            <UploadImage onNavigate={onNavigate} branch={props.branch} username={props.username} />
+            <UploadImage onNavigate={onNavigate} branch={props.branch} username={props.username} onScheduleChange={onScheduleChange} />
         </div>
     );
 }

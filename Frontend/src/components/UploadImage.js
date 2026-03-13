@@ -132,6 +132,7 @@ const UploadImage = function (props) {
             subjectname: subject,
             totalstudents: totalStudents,
             dayofweek: day,
+            branch: branch,
             timeslot: timeSlot
         });
 
