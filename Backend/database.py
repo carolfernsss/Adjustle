@@ -997,7 +997,7 @@ async def process_merge_response(notif_id: int, approved: bool):
         # Mark as rejected
         await db.execute(merge_requests_table.update().where(merge_requests_table.c.id == req["id"]).values(status="rejected"))
         
-        # Notify both coures
+        # Broadcast notifications to participating departments
         reject_msg = f"The proposed merge for {subject_id} (from {requestor_branch}) was declined."
         await add_notification(
             title="Merge Declined",
