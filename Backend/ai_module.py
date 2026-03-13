@@ -156,21 +156,21 @@ async def analyze_classroom_image(
     if img is None:
         raise HTTPException(status_code=400, detail="Image could not be decoded")
 
-    # Pass 1: Detect Humans
+    # Pass 1: Detect People
     results = yolo_model(img, classes=[0], conf=0.15, imgsz=1280, iou=0.5, max_det=150, verbose=False)
-    human_boxes = results[0].boxes
-    detected_count = len(human_boxes)
+    person_boxes = results[0].boxes
+    detected_count = len(person_boxes)
     
-    current_boxes = human_boxes
+    current_boxes = person_boxes
     names = results[0].names
     
-    # Pass 2: Fallback if no humans detected (Detect anything)
+    # Pass 2: Fallback if no people detected (Detect anything)
     if detected_count == 0:
         results_all = yolo_model(img, classes=None, conf=0.15, imgsz=1280, iou=0.5, max_det=150, verbose=False)
         current_boxes = results_all[0].boxes
         names = results_all[0].names
     
-    # Calculate attendance based on detected count (humans)
+    # Calculate attendance based on detected count (people)
     attendance = (detected_count / totalstudents) * 100 if totalstudents > 0 else 0
     
     # // Updating the live occupancy status in the shared database grid

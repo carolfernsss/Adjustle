@@ -1,4 +1,4 @@
-//https://chatgpt.com/g/g-tayJ50BT0-ai-code-humanizer
+// React component providing information about the Adjustle system architecture
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
