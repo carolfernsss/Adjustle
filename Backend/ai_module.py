@@ -441,6 +441,11 @@ async def analyze_classroom_image(
         "count": detected_count,
         "output_filename": filename,
         "detections": detections,
+        "detection_breakdown": {
+            "yolo_bodies": yolo_count,
+            "cascade_faces_extra": extra_count,
+            "cascade_faces_total": face_count
+        },
         "timing": {
             "total_ms": total_time,
             "total_sec": total_time / 1000

@@ -337,7 +337,13 @@ const UploadImage = function (props) {
                 <div className="result-details-area">
                     <div className="result-stat-box">
                         <div className="result-stat-number">{resultData.count}</div>
-                        <div className="result-stat-label">Students Counted</div>
+                        <div className="result-stat-label">People Detected</div>
+                        {resultData.detection_breakdown && (
+                            <div style={{ marginTop: '8px', fontSize: '11px', opacity: 0.65, lineHeight: '1.7' }}>
+                                <div>🤖 YOLO bodies: <strong>{resultData.detection_breakdown.yolo_bodies}</strong></div>
+                                <div>👤 Face cascade (extra): <strong>+{resultData.detection_breakdown.cascade_faces_extra}</strong></div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="detections-scrollable">
