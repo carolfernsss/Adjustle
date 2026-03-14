@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Bell, Calendar, TrendingUp } from "lucide-react";
 import "../css/Home.css";
+import { API_BASE } from "../api_config";
 
 const fullText = "ADJUSTLE";
 const fullText2 = "THE SCHEDULE THAT FITS YOU";
-
-import { API_BASE } from "../api_config";
-
 /* ---- Home Page Component ---- */
 const Home = function (props) {
     const onNavigate = props.onNavigate;
@@ -113,7 +111,8 @@ const Home = function (props) {
 
     /* ---- Carousel Logic ---- */
     const carouselItems = notifications.length > 0
-        ? [...notifications, ...notifications, ...notifications, ...notifications, ...notifications, ...notifications, ...notifications, ...notifications]
+        ? [...notifications, ...notifications, ...notifications, ...notifications, ...notifications, ...notifications, 
+            ...notifications, ...notifications]
         : [];
 
     return (
@@ -210,8 +209,10 @@ const Home = function (props) {
                                             onNavigate('notifications');
                                         }}
                                     >
-                                        <div className="notif-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                            <span className="notif-type" style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: '#d9bc94' }}>
+                                        <div className="notif-header" style={{ display: 'flex', justifyContent: 
+                                            'space-between', marginBottom: '10px' }}>
+                                            <span className="notif-type" style={{ display: 'flex', alignItems: 
+                                                'center', gap: '5px', fontSize: '0.8rem', color: '#d9bc94' }}>
                                                 {getIcon(notif.type)}
                                                 {typeLabel}
                                             </span>

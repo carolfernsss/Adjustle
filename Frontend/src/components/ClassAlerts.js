@@ -1,5 +1,6 @@
 import React, { useCallback, useState, useEffect } from "react";
 import "../css/ClassAlerts.css";
+import { API_BASE } from "../api_config";
 
 // Defines a static mapping for translating abbreviated subject identifiers into comprehensive academic nomenclature
 const SUBJECT_MAPPING = {
@@ -15,8 +16,6 @@ const SUBJECT_MAPPING = {
     "CC": "Cloud Computing",
     "DL": "Deep Learning"
 };
-
-import { API_BASE } from "../api_config";
 
 // React component providing a consolidated view of instructional scheduling adjustments and status alerts
 const ClassAlerts = function (props) {
