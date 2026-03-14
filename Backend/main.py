@@ -17,7 +17,7 @@ from Backend.authentication import auth_router as auth_router
 from Backend.scheduling import scheduling_router as scheduling_router
 from Backend.ai_module import ai_router as ai_router
 from Backend.notification import router as notification_router
-from Backend.database import init_db, close_db, db, users_table
+from Backend.database import init_db, close_db, db, users_table, timetable_table, _seed_timetable_grid, _seed_schedule_alerts
 
 
 app = FastAPI(
@@ -54,6 +54,14 @@ async def startup_event():
         if not existing_user:
             await db.execute(users_table.insert().values(**u))
             print(f"Seeded user: {u['username']}")
+
+    # Seeding timetable if empty
+    tt_count = await db.fetch_val("SELECT COUNT(*) FROM timetable")
+    if tt_count == 0:
+        print("Timetable is empty. Seeding initial data...")
+        await _seed_timetable_grid()
+        await _seed_schedule_alerts()
+        print("Timetable seeded successfully.")
 
     print("ADJUSTLE BACKEND IS READY")
 

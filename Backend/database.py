@@ -1091,6 +1091,7 @@ async def process_merge_response(notif_id: int, approved: bool):
 # --- Lifecycle Management ---
 
 # starting the database connection
+async def init_db():
     engine = create_engine(DATABASE_CONN_URL)
     metadata.create_all(engine)
     await db.connect()
