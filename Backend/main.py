@@ -56,9 +56,11 @@ async def startup_event():
             print(f"Seeded user: {u['username']}")
 
     # Seeding timetable if empty
-    tt_count = await db.fetch_val("SELECT COUNT(*) FROM timetable")
-    if tt_count == 0:
-        print("Timetable is empty. Seeding initial data...")
+    bca_count = await db.fetch_val("SELECT COUNT(*) FROM timetable WHERE branch = 'BCA' AND is_revised = false")
+    bcada_count = await db.fetch_val("SELECT COUNT(*) FROM timetable WHERE branch = 'BCADA' AND is_revised = false")
+    
+    if bca_count == 0 or bcada_count == 0:
+        print("Timetable is incomplete. Seeding missing data...")
         await _seed_timetable_grid()
         await _seed_schedule_alerts()
         print("Timetable seeded successfully.")
