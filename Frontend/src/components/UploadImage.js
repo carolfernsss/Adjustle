@@ -141,7 +141,10 @@ const UploadImage = function (props) {
                 method: "POST",
                 body: formData
             });
-            if (!response.ok) throw new Error("Failed to analyze image");
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || "Failed to analyze image");
+            }
             const data = await response.json();
             setResultData(data);
             setSuggestedAction(data.suggested_action);
@@ -149,7 +152,7 @@ const UploadImage = function (props) {
                 setResultImageUrl(BACKEND_URL + "/backend_static/results/" + data.output_filename + "?t=" + Date.now());
             }
         } catch (err) {
-            setError("Analysis failed. Please try again.");
+            setError(err.message || "Analysis failed. Please try again.");
         } finally {
             setLoading(false);
         }
