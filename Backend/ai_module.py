@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Load configurations from environment variables
-YOLO_MODEL_PATH = os.getenv("YOLO_MODEL_PATH", "yolov8s.pt")
+YOLO_MODEL_PATH = os.getenv("YOLO_MODEL_PATH", "Backend/yolov8n.pt")
 RESULTS_DIR = os.getenv("RESULTS_DIR", "backend_static/results")
 ATTEND_LOW = int(os.getenv("ATTENDANCE_LOW", "30"))
 ATTEND_MEDIUM = int(os.getenv("ATTENDANCE_MEDIUM", "40"))
@@ -191,17 +191,17 @@ async def analyze_classroom_image(
     # ---------------------------------------------------------------
     try:
         h, w = img.shape[:2]
-        TILE    = 640
-        OVERLAP = 0.35
+        TILE    = 1024
+        OVERLAP = 0.2
         stride  = int(TILE * (1 - OVERLAP))
 
         raw_yolo_boxes = []
         raw_yolo_confs = []
 
-        # Full-image pass (broad context, catches large/mid-size people)
+        # Full-image pass (broad context)
         res_full = yolo_model.predict(
-            img, classes=[0], conf=0.001, imgsz=1280,
-            iou=0.15, max_det=600, agnostic_nms=True, augment=True, verbose=False
+            img, classes=[0], conf=0.002, imgsz=960,
+            iou=0.15, max_det=600, agnostic_nms=True, augment=False, verbose=False
         )
         for box in res_full[0].boxes:
             x1, y1, x2, y2 = box.xyxy[0].tolist()
@@ -211,11 +211,14 @@ async def analyze_classroom_image(
         # Tile pass (catches small back-row people at high resolution)
         for y0 in range(0, h, stride):
             for x0 in range(0, w, stride):
+                # Optimization: skip bottom rows for tiling (students are rarely in bottom row corners)
+                if y0 > (h * 0.75): continue
+                
                 tile = img[y0:min(y0+TILE, h), x0:min(x0+TILE, w)]
-                if tile.shape[0] < 64 or tile.shape[1] < 64:
+                if tile.shape[0] < 128 or tile.shape[1] < 128:
                     continue
                 res_t = yolo_model.predict(
-                    tile, classes=[0], conf=0.001, imgsz=640,
+                    tile, classes=[0], conf=0.002, imgsz=TILE,
                     iou=0.15, max_det=200, agnostic_nms=True, verbose=False
                 )
                 for box in res_t[0].boxes:
@@ -250,8 +253,8 @@ async def analyze_classroom_image(
         gray_eq = cv2.equalizeHist(gray)   # improves contrast for distant faces
 
         # minNeighbors=3/4 balances recall vs false positives on wall posters etc.
-        f_a = face_cascade.detectMultiScale(gray_eq, scaleFactor=1.05, minNeighbors=3, minSize=(15, 15))
-        f_b = face_cascade.detectMultiScale(gray,    scaleFactor=1.08, minNeighbors=4, minSize=(20, 20))
+        f_a = face_cascade.detectMultiScale(gray_eq, scaleFactor=1.1, minNeighbors=3, minSize=(15, 15))
+        f_b = face_cascade.detectMultiScale(gray,    scaleFactor=1.15, minNeighbors=4, minSize=(20, 20))
 
         all_face_rects = []
         if len(f_a) > 0:
