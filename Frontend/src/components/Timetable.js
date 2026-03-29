@@ -1,4 +1,6 @@
 import { API_BASE } from "../api_config";
+import React, { useState, useEffect } from "react";
+import "../css/Timetable.css";
 
 // This function converts the day name to proper case for consistency
 const normalizeDay = function (day) {
@@ -50,9 +52,6 @@ const getSubjectFamily = function (subjectText) {
     }
     return code;
 };
-
-import React, { useState, useEffect } from "react";
-import "../css/Timetable.css";
 
 // This is the main component that renders the interactive weekly timetable grid
 export default function Timetable(props) {
