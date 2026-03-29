@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from Backend.database import get_notifs
+from database import get_notifs
 from typing import List, Optional
 
 # router for showing notifications

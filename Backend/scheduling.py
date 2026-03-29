@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
-from Backend.database import (
+from database import (
     get_all_schedules, 
     get_timetable_data, 
     cancel_class, 

@@ -1,7 +1,7 @@
 # logic for checking user logins
 from fastapi import APIRouter
 from pydantic import BaseModel
-from Backend.database import find_user
+from database import find_user
 from typing import Optional
 
 # router for handling logins

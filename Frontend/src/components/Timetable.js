@@ -1,6 +1,4 @@
-/* ---- Imports ---- */
-import React, { useState, useEffect } from "react";
-import "../css/Timetable.css";
+import { API_BASE } from "../api_config";
 
 // This function converts the day name to proper case for consistency
 const normalizeDay = function (day) {
@@ -53,7 +51,8 @@ const getSubjectFamily = function (subjectText) {
     return code;
 };
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+import React, { useState, useEffect } from "react";
+import "../css/Timetable.css";
 
 // This is the main component that renders the interactive weekly timetable grid
 export default function Timetable(props) {
@@ -590,7 +589,7 @@ export default function Timetable(props) {
                                     <button
                                         className="button primary"
                                         onClick={function () {
-                                            fetch(process.env.REACT_APP_API_URL + "/make_permanent", {
+                                            fetch(API_BASE + "/make_permanent", {
                                                 method: "POST",
                                                 headers: { "Content-Type": "application/json" },
                                                 body: JSON.stringify({ subject: currentTestSubject.subject })
@@ -620,7 +619,7 @@ export default function Timetable(props) {
                                         className="button primary"
                                         style={{ borderColor: '#ef4444', color: '#ef4444' }}
                                         onClick={function () {
-                                            fetch("http://localhost:8000/reset_subject", {
+                                            fetch(API_BASE + "/reset_subject", {
                                                 method: "POST",
                                                 headers: { "Content-Type": "application/json" },
                                                 body: JSON.stringify({ subject: currentTestSubject.subject })
@@ -637,7 +636,7 @@ export default function Timetable(props) {
                                         className="button primary"
                                         style={{ borderColor: '#22c55e', color: '#22c55e' }}
                                         onClick={function () {
-                                            fetch("http://localhost:8000/extend_test_period", {
+                                            fetch(API_BASE + "/extend_test_period", {
                                                 method: "POST",
                                                 headers: { "Content-Type": "application/json" },
                                                 body: JSON.stringify({ subject: currentTestSubject.subject })

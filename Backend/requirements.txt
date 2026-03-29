@@ -2,7 +2,7 @@ fastapi
 uvicorn
 pydantic
 ultralytics
-opencv-python
+opencv-python-headless
 python-multipart
 python-jose[cryptography]
 passlib[bcrypt]
@@ -12,3 +12,4 @@ databases
 asyncpg
 python-dotenv
 psycopg2-binary
+gunicorn

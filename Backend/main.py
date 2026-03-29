@@ -13,11 +13,11 @@ logging.getLogger("uvicorn.error").setLevel(logging.INFO)
 logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
 
 
-from Backend.authentication import auth_router as auth_router
-from Backend.scheduling import scheduling_router as scheduling_router
-from Backend.ai_module import ai_router as ai_router
-from Backend.notification import router as notification_router
-from Backend.database import init_db, close_db, db, users_table, timetable_table, _seed_timetable_grid, _seed_schedule_alerts
+from authentication import auth_router as auth_router
+from scheduling import scheduling_router as scheduling_router
+from ai_module import ai_router as ai_router
+from notification import router as notification_router
+from database import init_db, close_db, db, users_table, timetable_table, _seed_timetable_grid, _seed_schedule_alerts
 
 
 app = FastAPI(
@@ -29,7 +29,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000").split(","),
+    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:3000,https://adjustle.onrender.com").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
