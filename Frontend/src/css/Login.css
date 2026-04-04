@@ -7,11 +7,12 @@ body::-webkit-scrollbar {
 
 .login-page {
     width: 100%;
-    height: calc(100vh - 100px);
+    height: auto;
+    min-height: calc(100vh - 100px);
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 40px 0;
+    padding: 60px 0;
     position: relative;
     overflow: hidden;
     background: transparent;
@@ -73,7 +74,7 @@ body::-webkit-scrollbar {
     }
 
     50% {
-        transform: translateY(-15px);
+        transform: translateY(-8px);
     }
 }
 

@@ -162,7 +162,7 @@ async def analyze_classroom_image(
         # DOWN-SAMPLING: Huge images (4K+) cause OOM on Render.
         # Resizing to 1920px max width handles 99% of cases with high fidelity.
         h_orig, w_orig = img_raw.shape[:2]
-        MAX_DIM = 1920
+        MAX_DIM = 1600
         if max(h_orig, w_orig) > MAX_DIM:
             scale = MAX_DIM / max(h_orig, w_orig)
             img = cv2.resize(img_raw, (int(w_orig * scale), int(h_orig * scale)), interpolation=cv2.INTER_AREA)
@@ -170,6 +170,7 @@ async def analyze_classroom_image(
             img = img_raw
             
         h, w = img.shape[:2]
+        print(f"Analyzing {w}x{h} image (scaled from {w_orig}x{h_orig})")
 
         # ---------------------------------------------------------------
         # Reliable pure-numpy NMS (avoids cv2.dnn.NMSBoxes API differences)
@@ -206,17 +207,19 @@ async def analyze_classroom_image(
         try:
             h, w = img.shape[:2]
             TILE    = 640
-            OVERLAP = 0.1
+            OVERLAP = 0.3  # Increased overlap since we have fewer tiles now
             stride  = int(TILE * (1 - OVERLAP))
 
             raw_yolo_boxes = []
             raw_yolo_confs = []
 
-            # Full-image pass (standard imgsz=640 is fastest and uses far less RAM)
+            # Full-image pass: slightly higher conf=0.01 for speed
+            t0 = time.time()
             res_full = yolo_model.predict(
-                img, classes=[0], conf=0.002, imgsz=640,
-                iou=0.15, max_det=600, agnostic_nms=True, augment=False, verbose=False
+                img, classes=[0], conf=0.01, imgsz=640,
+                iou=0.25, max_det=600, agnostic_nms=True, augment=False, verbose=False
             )
+            print(f"Full-pass took {(time.time()-t0)*1000:.0f}ms")
             for box in res_full[0].boxes:
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
                 raw_yolo_boxes.append([x1, y1, x2, y2])
@@ -224,24 +227,31 @@ async def analyze_classroom_image(
 
             # Tile pass (catches small back-row people at high resolution)
             for y0 in range(0, h, stride):
+                # Critical check: stop if we are approaching Render's 30s timeout
+                if time.time() - start_time > 22:
+                    print("ANALYSIS WARNING: Nearing timeout, skipping remaining tiles")
+                    break
+                    
                 for x0 in range(0, w, stride):
                     # Optimization: skip bottom rows for tiling (students are rarely in bottom row corners)
-                    if y0 > (h * 0.75): continue
+                    if y0 > (h * 0.7): continue
                     
                     tile = img[y0:min(y0+TILE, h), x0:min(x0+TILE, w)]
-                    if tile.shape[0] < 128 or tile.shape[1] < 128:
+                    if tile.shape[0] < 200 or tile.shape[1] < 200:
                         continue
                     res_t = yolo_model.predict(
-                        tile, classes=[0], conf=0.002, imgsz=640,
-                        iou=0.15, max_det=200, agnostic_nms=True, verbose=False
+                        tile, classes=[0], conf=0.05, imgsz=640,
+                        iou=0.25, max_det=200, agnostic_nms=True, verbose=False
                     )
                     for box in res_t[0].boxes:
                         bx1, by1, bx2, by2 = box.xyxy[0].tolist()
                         raw_yolo_boxes.append([bx1+x0, by1+y0, bx2+x0, by2+y0])
                         raw_yolo_confs.append(float(box.conf[0]))
 
-            # Merge with global NMS at IOU=0.2 (keeps overlapping real people)
+            # Post-process detections
+            p0 = time.time()
             kept = numpy_nms(raw_yolo_boxes, raw_yolo_confs, iou_threshold=0.20)
+            print(f"Tiling & NMS took {(p0-t0)*1000:.0f}ms (Total {len(raw_yolo_boxes)} raw boxes down to {len(kept)})")
             yolo_boxes = np.array(raw_yolo_boxes, dtype=np.float32)[kept] if kept else np.array([])
             yolo_confs = np.array(raw_yolo_confs, dtype=np.float32)[kept] if kept else np.array([])
             yolo_count = len(yolo_boxes)
@@ -260,21 +270,20 @@ async def analyze_classroom_image(
         face_boxes  = []
         face_count  = 0
         try:
+            hf0 = time.time()
             face_cascade = cv2.CascadeClassifier(
                 cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
             )
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            gray_eq = cv2.equalizeHist(gray)   # improves contrast for distant faces
-
-            # minNeighbors=3/4 balances recall vs false positives on wall posters etc.
-            f_a = face_cascade.detectMultiScale(gray_eq, scaleFactor=1.1, minNeighbors=3, minSize=(15, 15))
-            f_b = face_cascade.detectMultiScale(gray,    scaleFactor=1.15, minNeighbors=4, minSize=(20, 20))
-
+            
+            # Using higher scaleFactor (1.3+) is 2x-3x faster than 1.1
+            f_a = face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=4, minSize=(30, 30))
+            
             all_face_rects = []
             if len(f_a) > 0:
                 all_face_rects.extend(f_a.tolist())
-            if len(f_b) > 0:
-                all_face_rects.extend(f_b.tolist())
+
+            print(f"Face cascade took {(time.time()-hf0)*1000:.0f}ms")
 
             # Convert [x,y,w,h] → [x1,y1,x2,y2] and NMS to remove duplicates
             face_xyxy  = [[fx, fy, fx+fw, fy+fh] for fx, fy, fw, fh in all_face_rects]
