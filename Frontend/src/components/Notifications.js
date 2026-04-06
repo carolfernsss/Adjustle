@@ -9,12 +9,23 @@ function Notifications(props) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Fetch notifications for the specific branch
         fetch(API_BASE + "/notifications?branch=" + branch)
             .then(res => res.json())
             .then(data => {
                 const fetchedNotifs = data.notifications || [];
-                const filtered = fetchedNotifs.filter(n => role === 'teacher' || (n.message && n.message.trim() !== ""));
+                const filtered = fetchedNotifs.filter(n => {
+                    if (role === 'teacher') {
+                        if ((!n.teacher_message || n.teacher_message.trim() === "") && n.type !== 'merge_request' && n.type !== 'merge_proposal' && n.type !== 'test_period') {
+                            if (!n.message && n.type !== 'system') return false;
+                        }
+                        return true;
+                    } else {
+                        if (!n.message || n.message.trim() === "" || n.type === 'merge_request' || n.type === 'merge_proposal' || n.type === 'test_period') {
+                            return false;
+                        }
+                        return true;
+                    }
+                });
                 setNotifications(filtered);
                 setLoading(false);
             })

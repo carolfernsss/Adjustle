@@ -7,11 +7,9 @@ import os
 import logging
 from pathlib import Path
 
-# making the logs less messy
 logging.getLogger("uvicorn").setLevel(logging.INFO)
 logging.getLogger("uvicorn.error").setLevel(logging.INFO)
 logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
-
 
 from authentication import auth_router as auth_router
 from scheduling import scheduling_router as scheduling_router
@@ -19,13 +17,11 @@ from ai_module import ai_router as ai_router
 from notification import router as notification_router
 from database import init_db, close_db, db, users_table, timetable_table, _seed_timetable_grid, _seed_schedule_alerts
 
-
 app = FastAPI(
     title="Adjustle API",
     description="AI-driven timetable application with attendance tracking",
     version="1.0.0"
 )
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,11 +33,9 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    # printing startup messages
     print("Database is initializing...")
     await init_db()
     
-    # adding default login accounts
     default_users = [
         {"username": "BCATeacher", "password": "Teacher123@", "branch": "BCA", "role": "teacher"},
         {"username": "BCADATeacher", "password": "Teacher123@", "branch": "BCADA", "role": "teacher"},
@@ -55,7 +49,6 @@ async def startup_event():
             await db.execute(users_table.insert().values(**u))
             print(f"Seeded user: {u['username']}")
 
-    # Seeding timetable if empty
     bca_count = await db.fetch_val("SELECT COUNT(*) FROM timetable WHERE branch = 'BCA' AND is_revised = false")
     bcada_count = await db.fetch_val("SELECT COUNT(*) FROM timetable WHERE branch = 'BCADA' AND is_revised = false")
     
@@ -71,11 +64,9 @@ async def startup_event():
 async def shutdown_event():
     await close_db()
 
-# making folders for image results
 os.makedirs("backend_static/results", exist_ok=True)
 app.mount("/backend_static", StaticFiles(directory="backend_static"), name="backend_static")
 
-# connecting all the different api parts
 app.include_router(auth_router, tags=["Authentication"])
 app.include_router(scheduling_router, tags=["Scheduling"])
 app.include_router(ai_router, tags=["AI Module"])
@@ -99,6 +90,5 @@ def root():
 def health_check():
     return {"status": "healthy"}
 
-# showing the react pages from the build folder
 frontend_path = Path(__file__).resolve().parent.parent / "Frontend" / "build"
 app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")

@@ -18,7 +18,7 @@ function MergeRequests(props) {
         if (!branch) return;
 
         const cleanBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
-        const url = cleanBase + '/pending_merges?branch=' + branch;
+        const url = cleanBase + '/pending_merges?branch=' + branch + '&_t=' + Date.now();
 
         fetch(url)
             .then(function (res) { return res.json(); })
@@ -102,36 +102,74 @@ function MergeRequests(props) {
             <div className="modal-overlay" style={{ zIndex: 9999 }}>
                 <div className="modal-content animate-up" style={{ width: '450px' }}>
                     <h2 style={{ fontFamily: 'Garamond, serif', color: '#d9bc94', marginBottom: '15px' }}>
-                        Merge Request Detected
+                        Merge Request
                     </h2>
-                    <p style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '20px' }}>
-                        Greetings <strong>{username}</strong>, <strong>{sender}</strong> is requesting to merge <strong>{currentModalRequest.subject}</strong> during the <strong>{currentModalRequest.time_slot}</strong> slot.
-                    </p>
+                    {currentModalRequest.status === 'fallback_pending' ? (
+                        <>
+                            <p style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '20px' }}>
+                                Greetings <strong>{username}</strong>, your proposed merge for <strong>{currentModalRequest.subject}</strong> was declined. Would you prefer shifting it 1 hour later?
+                            </p>
+                            <div className="modal-actions">
+                                <button className="button primary" onClick={function () { handleAction(currentModalRequest.id, 'fallback_delay'); }}>
+                                    Shift to an hour later
+                                </button>
+                                <button className="button secondary" onClick={function () { handleAction(currentModalRequest.id, 'fallback_leave'); }}>
+                                    Remain on schedule
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <p style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '20px' }}>
+                                {(function () {
+                                    const expanded = (currentModalRequest.subject === 'AI' || currentModalRequest.subject === 'Artificial Intelligence') ? 'Artificial Intelligence' : 
+                                                     (currentModalRequest.subject === 'IoT' || currentModalRequest.subject === 'Internet of Things') ? 'Internet of Things' : 
+                                                     currentModalRequest.subject;
+                                    return (
+                                        <>Greetings <strong>{username}</strong>, <strong>{sender}</strong> is requesting to merge <strong>{expanded}</strong> during the <strong>{currentModalRequest.time_slot}</strong> slot.</>
+                                    );
+                                })()}
+                            </p>
 
-                    {currentModalRequest.has_conflict && (
-                        <div style={{
-                            color: '#ef4444',
-                            backgroundColor: '#ef44441a',
-                            padding: '10px',
-                            borderRadius: '6px',
-                            fontSize: '13px',
-                            marginBottom: '20px'
-                        }}>
-                            Scheduling conflict detected with your existing lectures.
-                        </div>
+                            {currentModalRequest.has_conflict && (
+                                <div style={{
+                                    color: '#ef4444',
+                                    backgroundColor: '#ef44441a',
+                                    padding: '10px',
+                                    borderRadius: '6px',
+                                    fontSize: '13px',
+                                    marginBottom: '20px',
+                                    border: '1px solid #ef444433'
+                                }}>
+                                    {(function() {
+                                        const expanded = (currentModalRequest.conflict_details === 'AI' || currentModalRequest.conflict_details === 'Artificial Intelligence') ? 'Artificial Intelligence' : 
+                                                         (currentModalRequest.conflict_details === 'IoT' || currentModalRequest.conflict_details === 'Internet of Things') ? 'Internet of Things' : 
+                                                         currentModalRequest.conflict_details;
+                                        return (
+                                            <><strong>Conflict Alert:</strong> You already have <strong>{expanded}</strong> at {currentModalRequest.time_slot}. Please DENY this request.</>
+                                        );
+                                    })()}
+                                </div>
+                            )}
+
+                            <div className="modal-actions">
+                                <button 
+                                    className="button primary" 
+                                    onClick={function () { handleAction(currentModalRequest.id, 'accept'); }}
+                                    disabled={currentModalRequest.has_conflict}
+                                    style={{ opacity: currentModalRequest.has_conflict ? 0.5 : 1, cursor: currentModalRequest.has_conflict ? 'not-allowed' : 'pointer' }}
+                                >
+                                    {currentModalRequest.has_conflict ? 'UNAVAILABLE' : 'ACCEPT'}
+                                </button>
+                                <button className="button secondary" onClick={handleDismiss}>
+                                    DECIDE LATER
+                                </button>
+                                <button className="button secondary" style={{ color: '#ef4444' }} onClick={function () { handleAction(currentModalRequest.id, 'reject'); }}>
+                                    DENY
+                                </button>
+                            </div>
+                        </>
                     )}
-
-                    <div className="modal-actions">
-                        <button className="button primary" onClick={function () { handleAction(currentModalRequest.id, 'accept'); }}>
-                            ACCEPT
-                        </button>
-                        <button className="button secondary" onClick={handleDismiss}>
-                            DECIDE LATER
-                        </button>
-                        <button className="button secondary" style={{ color: '#ef4444' }} onClick={function () { handleAction(currentModalRequest.id, 'reject'); }}>
-                            DENY
-                        </button>
-                    </div>
                 </div>
             </div>
         );
@@ -196,11 +234,14 @@ function MergeRequests(props) {
                     </div>
                 ) : (
                     requests.map(function (req) {
+                        const displayName = (req.subject === 'AI' || req.subject === 'Artificial Intelligence') ? 'Artificial Intelligence' : 
+                                            (req.subject === 'IoT' || req.subject === 'Internet of Things') ? 'Internet of Things' : 
+                                            req.subject;
                         return (
                             <div key={req.id} className="merge-request-item">
                                 <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '10px', gap: '15px', width: '100%' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span className="merge-value">{req.subject}</span>
+                                        <span className="merge-value">{displayName}</span>
                                         <span className="merge-label">Lecture</span>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
@@ -209,22 +250,67 @@ function MergeRequests(props) {
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '12px' }}>
-                                    <button
-                                        onClick={function () { handleAction(req.id, 'accept'); }}
-                                        className="buttonog"
-                                        style={{ flex: 1, padding: '10px', fontSize: '0.7rem' }}
-                                    >
-                                        MERGE
-                                    </button>
-                                    <button
-                                        onClick={function () { handleAction(req.id, 'reject'); }}
-                                        className="buttonrev"
-                                        style={{ flex: 1, padding: '10px', fontSize: '0.7rem', color: '#ef4444', borderColor: '#ef444444' }}
-                                    >
-                                        REJECT
-                                    </button>
-                                </div>
+                                {req.status === 'fallback_pending' ? (
+                                    <>
+                                        <div style={{ display: 'flex', gap: '12px' }}>
+                                            <button
+                                                onClick={function () { handleAction(req.id, 'fallback_delay'); }}
+                                                className="buttonog"
+                                                style={{ flex: 1, padding: '10px', fontSize: '0.7rem' }}
+                                            >
+                                                Shift to an hour later
+                                            </button>
+                                            <button
+                                                onClick={function () { handleAction(req.id, 'fallback_leave'); }}
+                                                className="buttonrev"
+                                                style={{ flex: 1, padding: '10px', fontSize: '0.7rem', color: '#ef4444', borderColor: '#ef444444' }}
+                                            >
+                                                Remain on schedule
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        {req.has_conflict && (
+                                            <div style={{
+                                                color: '#ef4444',
+                                                fontSize: '11px',
+                                                marginBottom: '10px',
+                                                textAlign: 'left'
+                                            }}>
+                                                {(function() {
+                                                    const expanded = (req.conflict_details === 'AI' || req.conflict_details === 'Artificial Intelligence') ? 'Artificial Intelligence' : 
+                                                                     (req.conflict_details === 'IoT' || req.conflict_details === 'Internet of Things') ? 'Internet of Things' : 
+                                                                     req.conflict_details;
+                                                    return <>Conflict with <strong>{expanded}</strong></>;
+                                                })()}
+                                            </div>
+                                        )}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                                            <button
+                                                onClick={function () { handleAction(req.id, 'accept'); }}
+                                                className="buttonog"
+                                                style={{ 
+                                                    width: '100%', 
+                                                    padding: '10px', 
+                                                    fontSize: '0.7rem',
+                                                    opacity: req.has_conflict ? 0.5 : 1,
+                                                    cursor: req.has_conflict ? 'not-allowed' : 'pointer'
+                                                }}
+                                                disabled={req.has_conflict}
+                                            >
+                                                {req.has_conflict ? 'BLOCKED' : 'MERGE'}
+                                            </button>
+                                            <button
+                                                onClick={function () { handleAction(req.id, 'reject'); }}
+                                                className="buttonrev"
+                                                style={{ width: '100%', padding: '10px', fontSize: '0.7rem', color: '#ef4444', borderColor: '#ef444444' }}
+                                            >
+                                                REJECT
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         );
                     })

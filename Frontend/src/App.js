@@ -20,7 +20,7 @@ function App() {
   const [selectedDayClasses, setSelectedDayClasses] = useState(null);
   const [loggedIn, setLoggedIn] = useState(sessionStorage.getItem("adjustle_loggedIn") === "true");
   const [branch, setBranch] = useState(sessionStorage.getItem("adjustle_branch") || "BCA");
-  const [timetableMode, setTimetableMode] = useState(role === "student" ? "revised" : "original");
+  const [timetableMode, setTimetableMode] = useState("revised");
   const [showGuide, setShowGuide] = useState(false);
   const [showTourInvite, setShowTourInvite] = useState(false);
 
@@ -29,7 +29,7 @@ function App() {
 
   // Synchronizes the timetable viewing mode with the authenticated user's authorization role
   useEffect(() => {
-    setTimetableMode(role === "student" ? "revised" : "original");
+    setTimetableMode("revised");
   }, [role]);
 
   // Manages the persistence of session-critical metadata within the browser's local storage
@@ -131,7 +131,7 @@ function App() {
   function renderPage() {
     if (currentPage === "home") {
       return (
-        <Home onNavigate={navigateTo} role={role} loggedIn={loggedIn} />
+        <Home onNavigate={navigateTo} role={role} loggedIn={loggedIn} branch={branch} username={username} />
       );
     }
 
@@ -177,7 +177,7 @@ function App() {
               />
             )}
 
-            <div className="animate-up" style={{ animationDelay: '0.2s' }}>
+            <div id="right-sidebar-alerts" className="animate-up" style={{ animationDelay: '0.2s' }}>
               <ClassAlerts
                 selectedDay={selectedDayClasses}
                 refreshTrigger={refreshTrigger}
@@ -264,9 +264,14 @@ function App() {
             ABOUT
           </span>
           {loggedIn && (
-            <span onClick={openLogoutModal} id="nav-logout">
-              LOGOUT
-            </span>
+            <>
+              <span onClick={() => setShowGuide(true)} id="nav-help">
+                HELP
+              </span>
+              <span onClick={openLogoutModal} id="nav-logout">
+                LOGOUT
+              </span>
+            </>
           )}
         </div>
       </div>
@@ -289,7 +294,12 @@ function App() {
 
       {/* Teacher's Merge Request Modal */}
       {(loggedIn && branch && role.toLowerCase() === 'teacher') && (
-        <MergeRequests branch={branch} username={username} variant="popup" />
+        <MergeRequests 
+          branch={branch} 
+          username={username} 
+          variant="popup" 
+          onActionComplete={() => setRefreshTrigger(prev => prev + 1)}
+        />
       )}
 
       {/* Quick Tour Invite */}

@@ -1,4 +1,3 @@
-/* ---- Image Processing Component ---- */
 import React, { useState, useRef, useEffect } from "react";
 import {
     Upload,
@@ -28,7 +27,6 @@ const UploadImage = function (props) {
     const [image, setImage] = useState(null);
     const [previewUrl, setPreviewUrl] = useState("");
 
-    /* ---- Main state for inputs and analysis results ---- */
     const [totalStudents, setTotalStudents] = useState(70);
     const [subject, setSubject] = useState("");
     const [selectedDate, setSelectedDate] = useState(new Date().getDate());
@@ -36,7 +34,6 @@ const UploadImage = function (props) {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [timeSlot, setTimeSlot] = useState("");
 
-    // Calendar view state
     const [viewMonth, setViewMonth] = useState(new Date().getMonth());
     const [viewYear, setViewYear] = useState(new Date().getFullYear());
 
@@ -44,13 +41,11 @@ const UploadImage = function (props) {
         return ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date().getDay()];
     });
 
-    /* ---- Application States ---- */
     const [loading, setLoading] = useState(false);
     const [approving, setApproving] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
-    /* ---- Results Data ---- */
     const [resultData, setResultData] = useState(null);
     const [resultImageUrl, setResultImageUrl] = useState("");
     const [suggestedAction, setSuggestedAction] = useState(null);
@@ -60,17 +55,20 @@ const UploadImage = function (props) {
 
     const scheduleData = {
         "BCA": {
-            "Power BI": { "Tuesday": ["09:00 AM"], "Wednesday": ["11:00 AM", "02:00 PM"], "Friday": ["09:00 AM"] },
-            "Mobile Applications": { "Monday": ["10:00 AM"], "Wednesday": ["10:00 AM"], "Friday": ["10:00 AM"] },
-            "Mobile Applications Lab": { "Wednesday": ["02:00 PM", "04:00 PM"] },
-            "Software Engineering": { "Monday": ["01:00 PM"], "Tuesday": ["11:00 AM"], "Friday": ["11:00 AM"] },
-            "Internet of Things": { "Monday": ["11:05 AM"], "Tuesday": ["01:50 PM"], "Wednesday": ["01:50 PM"] },
-            "Artificial Intelligence": { "Friday": ["01:00 PM"] }
+            "Artificial Intelligence": { "Monday": ["09:15 AM"], "Tuesday": ["12:00 PM"], "Friday": ["01:50 PM"] },
+            "Internet of Things": { "Monday": ["11:05 AM"], "Wednesday": ["01:50 PM"], "Friday": ["11:05 AM"] },
+            "Mobile Applications": { "Monday": ["12:00 PM"], "Wednesday": ["09:15 AM"], "Friday": ["03:40 PM"] },
+            "Software Engineering": { "Monday": ["03:40 PM"], "Tuesday": ["10:10 AM"], "Thursday": ["10:10 AM"] },
+            "Power BI": { "Tuesday": ["02:45 PM"], "Wednesday": ["02:45 PM"], "Friday": ["09:15 AM"] },
+            "Mobile Applications Lab": { "Wednesday": ["10:10 AM"] },
+            "Project Lab": { "Saturday": ["11:05 AM"] }
         },
         "BCADA": {
-            "Internet of Things": { "Monday": ["09:00 AM"], "Tuesday": ["01:00 PM"], "Thursday": ["11:00 AM"] },
-            "Artificial Intelligence": { "Tuesday": ["09:00 AM", "03:00 PM"], "Thursday": ["09:00 AM"], "Friday": ["01:00 PM"] },
-            "Project Lab": { "Saturday": ["09:00 AM", "11:00 AM", "02:00 PM"] }
+            "Internet of Things": { "Monday": ["11:05 AM"], "Tuesday": ["01:50 PM"], "Wednesday": ["10:10 AM", "03:40 PM"], "Thursday": ["02:45 PM"], "Friday": ["03:40 PM"] },
+            "Artificial Intelligence": { "Monday": ["09:15 AM"], "Tuesday": ["12:00 PM"], "Wednesday": ["01:50 PM"], "Thursday": ["11:05 AM"], "Friday": ["11:05 AM"] },
+            "Cloud Computing": { "Monday": ["12:00 PM"], "Tuesday": ["09:15 AM"], "Wednesday": ["03:40 PM"], "Thursday": ["09:15 AM"], "Friday": ["01:50 PM"] },
+            "Deep Learning": { "Monday": ["02:45 PM"], "Tuesday": ["02:45 PM"], "Wednesday": ["12:00 PM"], "Thursday": ["01:50 PM"], "Friday": ["10:10 AM"] },
+            "Project Lab": { "Saturday": ["11:05 AM"] }
         }
     };
 
@@ -82,8 +80,6 @@ const UploadImage = function (props) {
             setSubject(subjects[0]);
         }
     }, [branch, subjects, subject]);
-
-    /* --- HANDLERS --- */
 
     const handleMonthChange = (offset) => {
         const newDate = new Date(viewYear, viewMonth + offset, 1);
@@ -167,7 +163,7 @@ const UploadImage = function (props) {
             day,
             time_slot: timeSlot,
             branch: branch,
-            requestor_name: username // Correct field name for backend
+            requestor_name: username
         };
         if (suggestedAction.notification) {
             payload.notification_title = suggestedAction.notification.title;
@@ -198,8 +194,6 @@ const UploadImage = function (props) {
         }
     };
 
-
-    /* --- RENDERERS --- */
     const renderDropzone = () => (
         <div
             id="upload-dropzone"
@@ -229,11 +223,11 @@ const UploadImage = function (props) {
                 <div className="preview-controls-section" id="detection-settings-panel">
                     <div className="preview-header"><h3>Detection Settings</h3></div>
 
-                    {/* 1. Subject */}
                     <div className="input-group" id="input-subject">
                         <label className="input-label"><BookOpen size={14} /> Class (Subject)</label>
                         <select value={subject} onChange={(e) => {
                             const newSub = e.target.value;
+                            if (!newSub) return;
                             setSubject(newSub);
                             const sch = branchSchedule[newSub] || {};
                             const pDays = Object.keys(sch);
@@ -242,11 +236,11 @@ const UploadImage = function (props) {
                                 setTimeSlot((sch[pDays[0]] || [])[0] || "");
                             }
                         }} className="upload-select">
-                            {subjects.map(s => <option key={s} className="upload-option">{s}</option>)}
+                            <option value="">Select Subject...</option>
+                            {subjects.map(s => <option key={s} className="upload-option" value={s}>{s}</option>)}
                         </select>
                     </div>
 
-                    {/* 2. Calendar */}
                     <div className="input-group" id="input-calendar">
                         <label className="input-label"><Calendar size={14} /> Class Schedule</label>
                         <div className="calendar-wrapper">
@@ -278,8 +272,6 @@ const UploadImage = function (props) {
                         </div>
                     </div>
 
-
-                    {/* 3. Time Slots */}
                     <div className="input-group" id="input-time-slot">
                         <label className="input-label">Pick Time Slot ({availableSlots.length} sessions)</label>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -289,7 +281,6 @@ const UploadImage = function (props) {
                         </div>
                     </div>
 
-                    {/* 4. Total Students */}
                     <div className="input-group" id="input-total-students">
                         <label className="input-label"><Users size={14} /> Students (max 250)</label>
                         <input type="number" value={totalStudents} min={1} max={250} onChange={(e) => setTotalStudents(Number(e.target.value))} className="upload-input" />
@@ -315,7 +306,6 @@ const UploadImage = function (props) {
             statusText = isLab ? "Lab Rescheduling (2hr block)" : "Class will be Rescheduled";
             statusClass = "error";
         } else if (resultData.status === "Merged") {
-            // Labs cannot be merged
             if (isLab) {
                 statusText = "Lab Rescheduled (2hr block)";
             } else {
@@ -341,12 +331,6 @@ const UploadImage = function (props) {
                     <div className="result-stat-box">
                         <div className="result-stat-number">{resultData.count}</div>
                         <div className="result-stat-label">People Detected</div>
-                        {resultData.detection_breakdown && (
-                            <div style={{ marginTop: '8px', fontSize: '11px', opacity: 0.65, lineHeight: '1.7' }}>
-                                <div>🤖 YOLO bodies: <strong>{resultData.detection_breakdown.yolo_bodies}</strong></div>
-                                <div>👤 Face cascade (extra): <strong>+{resultData.detection_breakdown.cascade_faces_extra}</strong></div>
-                            </div>
-                        )}
                     </div>
 
                     <div className="detections-scrollable">
@@ -385,7 +369,6 @@ const UploadImage = function (props) {
 
     return (
         <>
-
             {error && <div className="message-box error"><AlertCircle size={18} /><span>{error}</span></div>}
             {success && <div className="message-box success"><CheckCircle size={18} /><span>{success}</span></div>}
             {resultData ? renderResults() : (image ? renderPreview() : renderDropzone())}

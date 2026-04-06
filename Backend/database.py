@@ -1,4 +1,3 @@
-# getting tools for database and systems
 import os
 import re
 from datetime import datetime
@@ -10,7 +9,6 @@ from sqlalchemy import (
 )
 from databases import Database
 
-# loading variables from .env file
 load_dotenv()
 
 DATABASE_CONN_URL = os.getenv("DATABASE_URL")
@@ -21,13 +19,9 @@ if not DATABASE_CONN_URL:
         "Please configure your PostgreSQL connection in the .env file."
     )
 
-# starting the database connection
 db = Database(DATABASE_CONN_URL)
 metadata = MetaData()
 
-# Table definitions for the system
-
-# table for user accounts
 users_table = Table(
     "users",
     metadata,
@@ -100,15 +94,12 @@ merge_requests_table = Table(
     Column("requestor_username", String, nullable=True)
 )
 
-# Pydantic models for data validation
-
 class UserProfile(BaseModel):
     id: int
     username: str
     email: Optional[str] = None
     role: str = "student"
 
-# format for schedule data
 class ScheduleRecord(BaseModel):
     classid: int
     subject: str
@@ -117,49 +108,62 @@ class ScheduleRecord(BaseModel):
     newtime: Optional[str] = None
     reason: Optional[str] = None
 
-# User related database functions
-
 time_slots = ["9:15-10:05", "10:10-11:00", "11:05-11:55", "12:00-12:50", "12:50-1:50", "1:50-2:40", "2:45-3:35", "3:40-4:30"]
 
-# BCA Schedule Maps
+def normalize_time_slot(time_str: str) -> str:
+    if not time_str: return ""
+    t = time_str.strip().upper().replace("0", "", 1) if time_str.startswith("0") else time_str.strip().upper()
+    mapping = {
+        "9:15 AM": "9:15-10:05",
+        "10:10 AM": "10:10-11:00",
+        "11:05 AM": "11:05-11:55",
+        "12:00 PM": "12:00-12:50",
+        "1:50 PM": "1:50-2:40",
+        "2:45 PM": "2:45-3:35",
+        "3:40 PM": "3:40-4:30",
+        # Including versions with leading zeros
+        "09:15 AM": "9:15-10:05",
+        "01:50 PM": "1:50-2:40",
+        "02:45 PM": "2:45-3:35",
+        "03:40 PM": "3:40-4:30"
+    }
+    return mapping.get(time_str.strip().upper(), mapping.get(t, time_str))
+
 original_schedule_map = {
-    "Monday": ["AI", "", "IoT", "MA", "LUNCH", "Internship", "", "SE"],
-    "Tuesday": ["", "SE", "", "AI", "LUNCH", "IoT", "PBI", ""],
-    "Wednesday": ["MA", "MA LAB", "MA LAB", "", "LUNCH", "IoT", "", ""],
-    "Thursday": ["", "SE", "", "AI", "LUNCH", "Library", "", "MA"],
-    "Friday": ["PBI", "", "IoT", "SE", "LUNCH", "AI", "", ""],
-    "Saturday": ["", "", "", "Project LAB", "LUNCH", ""]
+    "Monday":    ["AI", "", "IoT", "MA", "LUNCH", "Internship", "", "SE"],
+    "Tuesday":   ["", "SE", "", "AI", "LUNCH", "", "PBI", ""],
+    "Wednesday": ["MA", "MA LAB", "MA LAB", "", "LUNCH", "IoT", "PBI", ""],
+    "Thursday":  ["", "SE", "", "", "LUNCH", "Library", "", ""],
+    "Friday":    ["PBI", "", "IoT", "SE", "LUNCH", "AI", "", "MA"],
+    "Saturday":  ["", "", "Project LAB", "Project LAB", "LUNCH", "", "", ""]
 }
 
 revised_schedule_map = {
-    "Monday": ["AI", "", "IoT", "MA", "LUNCH", "Internship", "", "SE"],
-    "Tuesday": ["", "SE", "", "AI", "LUNCH", "IoT", "PBI", ""],
-    "Wednesday": ["MA", "MA LAB", "MA LAB", "", "LUNCH", "IoT", "", ""],
-    "Thursday": ["", "SE", "", "AI", "LUNCH", "Library", "", "MA"],
-    "Friday": ["PBI", "", "IoT", "SE", "LUNCH", "AI", "", ""],
-    "Saturday": ["", "", "", "Project LAB", "LUNCH", ""]
+    "Monday":    ["AI", "", "IoT", "MA", "LUNCH", "Internship", "", "SE"],
+    "Tuesday":   ["", "SE", "", "AI", "LUNCH", "", "PBI", ""],
+    "Wednesday": ["MA", "MA LAB", "MA LAB", "", "LUNCH", "IoT", "PBI", ""],
+    "Thursday":  ["", "SE", "", "", "LUNCH", "Library", "", ""],
+    "Friday":    ["PBI", "", "IoT", "SE", "LUNCH", "AI", "", "MA"],
+    "Saturday":  ["", "", "Project LAB", "Project LAB", "LUNCH", "", "", ""]
 }
 
-# BCADA Schedule Maps (Semester 6)
 bcada_original_map = {
-    "Monday": ["AI", "", "IoT", "CC", "LUNCH", "Internship", "DL", ""],
-    "Tuesday": ["CC", "", "", "AI", "LUNCH", "IoT", "DL", ""],
-    "Wednesday": ["", "IoT", "", "DL", "LUNCH", "AI", "", "CC"],
-    "Thursday": ["CC", "", "AI", "", "LUNCH", "DL", "IoT", ""],
-    "Friday": ["", "DL", "AI", "", "LUNCH", "CC", "", "IoT"],
-    "Saturday": ["", "", "", "Project LAB", "LUNCH", ""]
+    "Monday":    ["AI", "IoT", "", "CC", "LUNCH", "DL", "", ""],
+    "Tuesday":   ["DL", "", "AI", "IoT", "LUNCH", "CC", "", "AI"],
+    "Wednesday": ["IoT", "CC", "", "DL", "LUNCH", "AI", "", ""],
+    "Thursday":  ["CC", "AI", "", "IoT", "LUNCH", "DL", "", "IoT"],
+    "Friday":    ["DL", "", "CC", "", "LUNCH", "AI", "", ""],
+    "Saturday":  ["", "", "Project LAB", "Project LAB", "LUNCH", "", "", ""]
 }
 
 bcada_revised_map = {
-    "Monday": ["AI", "", "IoT", "CC", "LUNCH", "Internship", "DL", ""],
-    "Tuesday": ["CC", "", "", "AI", "LUNCH", "IoT", "DL", ""],
-    "Wednesday": ["", "IoT", "", "DL", "LUNCH", "AI", "", "CC"],
-    "Thursday": ["CC", "", "AI", "", "LUNCH", "DL", "IoT", ""],
-    "Friday": ["", "DL", "AI", "", "LUNCH", "CC", "", "IoT"],
-    "Saturday": ["", "", "", "Project LAB", "LUNCH", ""]
+    "Monday":    ["AI", "IoT", "", "CC", "LUNCH", "DL", "", ""],
+    "Tuesday":   ["DL", "", "AI", "IoT", "LUNCH", "CC", "", "AI"],
+    "Wednesday": ["IoT", "CC", "", "DL", "LUNCH", "AI", "", ""],
+    "Thursday":  ["CC", "AI", "", "IoT", "LUNCH", "DL", "", "IoT"],
+    "Friday":    ["DL", "", "CC", "", "LUNCH", "AI", "", ""],
+    "Saturday":  ["", "", "Project LAB", "Project LAB", "LUNCH", "", "", ""]
 }
-
-
 
 subject_family_map = {
     "AI": "ARTIFICIAL INTELLIGENCE",
@@ -172,8 +176,7 @@ subject_family_map = {
     "DL": "DEEP LEARNING"
 }
 
-
-# cleaning up subject names
+# Cleans and standardizes the subject name for processing
 def normalize_subject_token(subject_text: str) -> str:
     if not subject_text:
         return ""
@@ -182,14 +185,12 @@ def normalize_subject_token(subject_text: str) -> str:
     token = re.sub(r"\s+", " ", token).strip().upper()
     return token
 
-
-# finding the category of a subject
+# Maps specific class names to their broader subject category
 def get_subject_family(subject_text: str) -> str:
     token = normalize_subject_token(subject_text)
     return subject_family_map.get(token, token)
 
-
-# matching subject names to the database
+# Finds the correct subject instance for a specific day and time
 def resolve_subject_instance(subject_input: str, target_day: Optional[str]) -> Optional[str]:
     normalized_day = normalize_day(target_day) if target_day else None
     requested_family = get_subject_family(subject_input)
@@ -211,8 +212,8 @@ def resolve_subject_instance(subject_input: str, target_day: Optional[str]) -> O
 
     return None
 
+# Checks if a subject is taught in both departments
 async def is_subject_shared(subject_name: str) -> bool:
-    # Identify if a subject exists in both BCA and BCADA timetables
     bca_subjects = set()
     for day_list in original_schedule_map.values():
         for s in day_list:
@@ -228,10 +229,8 @@ async def is_subject_shared(subject_name: str) -> bool:
     family = get_subject_family(subject_name)
     return family in bca_subjects and family in bcada_subjects
 
-# searching for a user in the table
+# Looks up a user account by their username
 async def find_user(target_username: str) -> Optional[dict]:
-    # Finds a user by their username (case-insensitive). 
-    # print(f"DEBUG: Looking for user '{target_username}'...")
     query = users_table.select().where(func.lower(users_table.c.username) == target_username.lower())
     user_record = await db.fetch_one(query)
     
@@ -240,41 +239,40 @@ async def find_user(target_username: str) -> Optional[dict]:
 
     return None
 
-# fixing day names to match
+# Expands short day names to their full forms
 def normalize_day(day_name: str) -> str:
-    # Converts full day names to long form (e.g., 'Mon' -> 'Monday')
+    if not day_name: return "Monday"
+    d = day_name.lower().replace(".", "").strip()
     mapping = {
         "monday": "Monday", "tuesday": "Tuesday", "wednesday": "Wednesday",
         "thursday": "Thursday", "friday": "Friday", "saturday": "Saturday", "sunday": "Sunday",
-        "mon": "Monday", "tue": "Tuesday", "wed": "Wednesday", "thu": "Thursday", "fri": "Friday", "sat": "Saturday", "sun": "Sunday"
+        "mon": "Monday", "tue": "Tuesday", "wed": "Wednesday", "thu": "Thursday", "fri": "Friday", "sat": "Saturday", "sun": "Sunday",
+        "mondy": "Monday", "tuesdy": "Tuesday", "wednesdy": "Wednesday", "thursdy": "Thursday", "fridy": "Friday", "saturdy": "Saturday", "sundy": "Sunday",
+        "thusdy": "Thursday"
     }
-    return mapping.get(day_name.lower(), day_name)
+    return mapping.get(d, day_name)
 
-
-# picking a new day for classes
+# Picks the following day in the weekly cycle
 def choose_reschedule_day(source_day: str) -> str:
-    # Always picks the next chronological day (forward in time)
-    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    s = (source_day or "Mon")[:3].title()
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    s = normalize_day(source_day or "Monday")
     if s not in days:
-        return "Tue"
+        return "Tuesday"
     
     idx = days.index(s)
     next_idx = (idx + 1) % len(days)
     return days[next_idx]
 
-
     return None
 
-
-# finding an empty time slot
-def find_smart_slot_for_day(records: List[dict], day: str, ignore_subject: Optional[str] = None, required_slots: int = 1) -> Optional[str]:
-    # This finds the best slot to pack the schedule "one before another"
+# Locates an empty time slot within a specific day
+def find_smart_slot_for_day(records: List[dict], day: str, ignore_subject: Optional[str] = None, required_slots: int = 1, min_index: int = 0) -> Optional[str]:
+    normalized_day = normalize_day(day)
     taken_indices = []
     ignore_lower = (ignore_subject or "").lower()
 
     for row in records:
-        if row.get("day") != day:
+        if normalize_day(row.get("day")) != normalized_day:
             continue
         subject = (row.get("subject") or "").strip()
         if not subject or subject == "LUNCH" or subject == "":
@@ -286,61 +284,45 @@ def find_smart_slot_for_day(records: List[dict], day: str, ignore_subject: Optio
         except ValueError:
             continue
 
-    if not taken_indices:
-        # Default to 9:15 (index 2) as a standard start if day is empty
-        return time_slots[2]
+    max_idx_limit = len(time_slots)
+    if normalized_day == "Saturday":
+        max_idx_limit = 4 
 
     candidates = []
-    for idx in range(len(time_slots)):
-        # Skip lunch and taken slots
+    for idx in range(min_index, max_idx_limit):
         if time_slots[idx] == "12:50-1:50":
+            continue
+        if idx + required_slots > max_idx_limit:
             continue
             
         all_available = True
         for offset in range(required_slots):
             check_idx = idx + offset
-            if check_idx >= len(time_slots) or time_slots[check_idx] == "12:50-1:50" or check_idx in taken_indices:
+            if check_idx >= max_idx_limit or time_slots[check_idx] == "12:50-1:50" or check_idx in taken_indices:
                 all_available = False
                 break
         
-        if not all_available:
-            continue
-        
-        # Distance to existing cluster
-        min_dist = min(abs(idx - t) for t in taken_indices)
-        
-        # Count adjacent slots to prefer filling gaps (adj_count 2 > adj_count 1)
-        adj_count = 0
-        for offset in range(required_slots):
-            curr_idx = idx + offset
-            if any(abs(curr_idx - t) == 1 for t in taken_indices):
-                adj_count += 1
-        
-        # Penalize larger distances heavily to prefer packing
-        # Subtract adjacency bonus (higher adj_count = better)
-        score = min_dist * 10 - (adj_count * 15)
-            
-        candidates.append((idx, score))
+        if all_available:
+            return time_slots[idx]
 
-    if not candidates:
-        return None
+    return None
 
-    # Sort by improved score (packing + gap filling), then by index
-    candidates.sort(key=lambda x: (x[1], x[0]))
-    return time_slots[candidates[0][0]]
-
-
-# clearing a subject from the new grid
-async def clear_subject_from_revised_grid(subject_id: str):
-    await db.execute(
-        timetable_table.update().where(
-            (timetable_table.c.is_revised == True) &
-            (func.lower(timetable_table.c.subject) == subject_id.lower())
-        ).values(subject="")
+# Removes a specific subject from the active schedule grid
+async def clear_subject_from_revised_grid(subject_id: str, branch: str, day: Optional[str] = None, time_slot: Optional[str] = None):
+    query = timetable_table.update().where(
+        (timetable_table.c.is_revised == True) &
+        (timetable_table.c.branch == branch) &
+        (func.lower(timetable_table.c.subject) == subject_id.lower())
     )
+    if day:
+        query = query.where(timetable_table.c.day == normalize_day(day))
+    if time_slot:
+        t = normalize_time_slot(time_slot)
+        query = query.where(timetable_table.c.time_slot == t)
+        
+    await db.execute(query.values(subject=""))
 
-
-# putting a subject back to its old spot
+# Puts a subject back into its original timetable positions
 async def reset_subject_revised_position(subject_id: str):
     original_positions = await db.fetch_all(
         timetable_table.select().where(
@@ -348,8 +330,11 @@ async def reset_subject_revised_position(subject_id: str):
             (func.lower(timetable_table.c.subject) == subject_id.lower())
         )
     )
-
-    await clear_subject_from_revised_grid(subject_id)
+    if not original_positions:
+        return
+        
+    target_branch = original_positions[0]["branch"]
+    await clear_subject_from_revised_grid(subject_id, branch=target_branch)
 
     for pos in original_positions:
         pos_dict = dict(pos)
@@ -357,21 +342,25 @@ async def reset_subject_revised_position(subject_id: str):
             timetable_table.update().where(
                 (timetable_table.c.is_revised == True) &
                 (timetable_table.c.day == pos_dict["day"]) &
-                (timetable_table.c.time_slot == pos_dict["time_slot"])
+                (timetable_table.c.time_slot == pos_dict["time_slot"]) &
+                (timetable_table.c.branch == target_branch)
             ).values(subject=subject_id)
         )
 
-
-# moving a subject to a new spot in the grid
+# Shifts a class to a new day or time while moving others
 async def apply_subject_change_to_revised_grid(subject_id: str, new_status: str, source_day: Optional[str] = None):
     normalized_source_day = normalize_day(source_day) if source_day else None
 
-    if new_status in ["On Schedule", "Active", "Merged"]:
+    if new_status in ["On Schedule", "Active"]:
+        await reset_subject_revised_position(subject_id)
+        return
+
+    if new_status == "Merged":
         await reset_subject_revised_position(subject_id)
         return
 
     if new_status == "Cancelled":
-        await clear_subject_from_revised_grid(subject_id)
+        await clear_subject_from_revised_grid(subject_id, branch=target_branch, day=normalized_source_day)
         return
 
     original_positions = await db.fetch_all(
@@ -380,7 +369,14 @@ async def apply_subject_change_to_revised_grid(subject_id: str, new_status: str,
             (func.lower(timetable_table.c.subject) == subject_id.lower())
         )
     )
+    if not original_positions:
+        return
+        
     target_branch = original_positions[0]["branch"]
+
+    if new_status == "Cancelled":
+        await clear_subject_from_revised_grid(subject_id, branch=target_branch, day=normalized_source_day)
+        return
 
     origin = None
     if normalized_source_day:
@@ -391,7 +387,6 @@ async def apply_subject_change_to_revised_grid(subject_id: str, new_status: str,
     origin_day = origin["day"]
     origin_slot = origin["time_slot"]
     
-    # Filter revised records by SAME branch for smart slot calculation
     revised_records = [dict(r) for r in await db.fetch_all(
         timetable_table.select().where(
             (timetable_table.c.is_revised == True) & 
@@ -402,39 +397,59 @@ async def apply_subject_change_to_revised_grid(subject_id: str, new_status: str,
     target_day = origin_day
     target_slot = origin_slot
 
-    # Determine required slots (Labs need 2 hours/slots)
     is_lab = "LAB" in (subject_id or "").upper()
     req_count = 2 if is_lab else 1
 
-    if new_status == "Delayed":
-        delayed_slot = find_smart_slot_for_day(
-            revised_records,
-            origin_day,
-            ignore_subject=subject_id,
-            required_slots=req_count
-        )
-        if delayed_slot:
-            target_slot = delayed_slot
-    elif new_status == "Rescheduled":
-        rescheduled_day = choose_reschedule_day(origin_day)
-        # Use the 'Smart' slot finder to group classes together
-        rescheduled_slot = find_smart_slot_for_day(
-            revised_records,
-            rescheduled_day,
-            ignore_subject=subject_id,
-            required_slots=req_count
-        )
+    shared = await is_subject_shared(subject_id)
+    branches_to_process = ["BCA", "BCADA"] if shared else [target_branch]
 
-        if rescheduled_slot:
-            target_day = rescheduled_day
-            target_slot = rescheduled_slot
+    if new_status == "Delayed":
+        try:
+            start_search_idx = time_slots.index(origin_slot) + 1
+        except ValueError:
+            start_search_idx = 0
+            
+        # Skip lunch
+        if start_search_idx < len(time_slots) and time_slots[start_search_idx] == "12:50-1:50":
+            start_search_idx += 1
+
+        if start_search_idx < len(time_slots):
+            target_slot = time_slots[start_search_idx]
         else:
-            # Fallback to same day clustering
+            new_status = "Rescheduled"
+
+    if new_status == "Rescheduled":
+        # Search every day starting from next day until we find a spot or end up back at origin
+        days_cycle = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        try:
+            current_day_idx = days_cycle.index(normalize_day(origin_day))
+        except ValueError:
+            current_day_idx = 0
+            
+        found = False
+        for i in range(1, 7): # Try next 6 days
+            check_day_idx = (current_day_idx + i) % len(days_cycle)
+            candidate_day = normalize_day(days_cycle[check_day_idx])
+            
+            candidate_slot = find_smart_slot_for_day(
+                revised_records,
+                candidate_day,
+                ignore_subject=subject_id,
+                required_slots=req_count
+            )
+            if candidate_slot:
+                target_day = candidate_day
+                target_slot = candidate_slot
+                found = True
+                break
+        
+        if not found:
             fallback_slot = find_smart_slot_for_day(
                 revised_records,
                 origin_day,
                 ignore_subject=subject_id,
-                required_slots=req_count
+                required_slots=req_count,
+                min_index=0
             )
             if fallback_slot:
                 target_slot = fallback_slot
@@ -442,38 +457,84 @@ async def apply_subject_change_to_revised_grid(subject_id: str, new_status: str,
                 await reset_subject_revised_position(subject_id)
                 return
 
-    await clear_subject_from_revised_grid(subject_id)
-    
-    # Occupy the required number of slots
-    try:
-        start_idx = time_slots.index(target_slot)
-        for i in range(req_count):
-            current_idx = start_idx + i
-            if current_idx < len(time_slots):
-                await db.execute(
-                    timetable_table.update().where(
+    # Recursively moves classes when a slot becomes occupied
+    async def displace_and_place(subj_to_place, day, slot, branch_list, depth=0):
+        if depth > 10: return # Prevent infinite recursion
+        
+        try:
+            idx = time_slots.index(slot)
+        except ValueError:
+            return
+
+        # Identify occupants at destination
+        occ_to_displace = set()
+        for i in range(req_count if "LAB" in subj_to_place.upper() else 1):
+            curr_idx = idx + i
+            if curr_idx >= len(time_slots): continue
+            
+            for b in branch_list:
+                row = await db.fetch_one(timetable_table.select().where(
+                    (timetable_table.c.is_revised == True) &
+                    (timetable_table.c.day == day) &
+                    (timetable_table.c.time_slot == time_slots[curr_idx]) &
+                    (timetable_table.c.branch == b)
+                ))
+                if row and row["subject"] and row["subject"].strip() != "" and row["subject"] != "LUNCH":
+                    if row["subject"].lower() != subj_to_place.lower():
+                        occ_to_displace.add((row["subject"], b))
+
+        # Place the subject
+        for i in range(req_count if "LAB" in subj_to_place.upper() else 1):
+            curr_idx = idx + i
+            if curr_idx < len(time_slots):
+                for b in branch_list:
+                    await db.execute(timetable_table.update().where(
                         (timetable_table.c.is_revised == True) &
-                        (timetable_table.c.day == target_day) &
-                        (timetable_table.c.time_slot == time_slots[current_idx]) &
-                        (timetable_table.c.branch == target_branch)
-                    ).values(subject=subject_id)
+                        (timetable_table.c.day == day) &
+                        (timetable_table.c.time_slot == time_slots[curr_idx]) &
+                        (timetable_table.c.branch == b)
+                    ).values(subject=subj_to_place))
+
+        # Update schedule record
+        for b in branch_list:
+            final_status = "Rescheduled" if depth > 0 else new_status
+            await db.execute(schedule_table.update().where(
+                (func.lower(schedule_table.c.subject) == subj_to_place.lower()) &
+                (schedule_table.c.branch == b)
+            ).values(new_time=f"{day} {slot}", status=final_status, is_active=True))
+            
+            # Autogenerate an alert if this subject was bumped automatically
+            if depth > 0:
+                await add_notification(
+                    title=f"{subj_to_place} Shifted",
+                    message=f"{subj_to_place} shifted to {day} at {slot}.",
+                    n_type="schedule_change",
+                    teacher_message=f"{subj_to_place} clashed with a schedule change and was displaced to {day} at {slot}.",
+                    branch=b
                 )
-    except ValueError:
-        pass
 
-    # Update the schedule record with the new location
-    await db.execute(
-        schedule_table.update().where(
-            (schedule_table.c.subject == subject_id) &
-            (schedule_table.c.original_time == normalized_source_day)
-        ).values(new_time=f"{target_day} {target_slot}")
-    )
+        # Displace others
+        for occ, occ_branch in occ_to_displace:
+            next_idx = idx + (req_count if "LAB" in subj_to_place.upper() else 1)
+            if next_idx < len(time_slots) and time_slots[next_idx] == "12:50-1:50":
+                next_idx += 1
+            
+            if next_idx >= len(time_slots) or (day == "Saturday" and next_idx >= 4):
+                # Move to next day
+                next_day = choose_reschedule_day(day)
+                await displace_and_place(occ, next_day, time_slots[0], [occ_branch], depth + 1)
+            else:
+                await displace_and_place(occ, day, time_slots[next_idx], [occ_branch], depth + 1)
 
-# --- SCHEDULING AND NOTIFICATIONS FUNCTIONS ---
+    # Clear original position if moving within same day or to another day
+    for b in branches_to_process:
+        await clear_subject_from_revised_grid(subject_id, branch=b, day=origin_day)
+    
+    # Perform the displacement and placement
+    await displace_and_place(subject_id, target_day, target_slot, branches_to_process)
 
-# getting all the class schedules
+# Retrieves all currently active schedule adjustments for a branch
 async def get_all_schedules(branch: Optional[str] = "BCA") -> List[dict]:
-    # Filter by branch if specified
     query = schedule_table.select().where(
         (schedule_table.c.is_active == True) & 
         (schedule_table.c.branch == branch)
@@ -481,7 +542,7 @@ async def get_all_schedules(branch: Optional[str] = "BCA") -> List[dict]:
     records = await db.fetch_all(query)
     return [dict(r) for r in records]
 
-# getting all the notifications
+# Fetches recent alerts and coordination requests for the user
 async def get_notifs(branch: str = "BCA") -> List[dict]:
     query = notifications_table.select().where(notifications_table.c.branch == branch).order_by(notifications_table.c.id.desc())
     records = await db.fetch_all(query)
@@ -490,23 +551,17 @@ async def get_notifs(branch: str = "BCA") -> List[dict]:
     for r in records:
         d = dict(r)
         
-        # If it's a merge request, attach the request ID so the UI can take action
         if d["type"] == "merge_request":
             mr_query = merge_requests_table.select().where(merge_requests_table.c.notification_id == d["id"])
             mr_record = await db.fetch_one(mr_query)
             if mr_record:
                 d["merge_request_id"] = mr_record["id"]
                 d["mr_status"] = mr_record["status"]
-        # Dynamically inject remaining test period if it exists in the message
-        # This is a bit of a hack but avoids storing transient data
         if "test period" in (d.get("teacher_message") or "").lower():
-            # Find the subject family mentioned in the message
-            # Look for active test periods in schedule_table
             active_schedules = await db.fetch_all(schedule_table.select().where(schedule_table.c.is_active == True))
             for s in active_schedules:
                 if get_subject_family(s["subject"]) in d["teacher_message"].upper():
                     rem = await calculate_remaining_weeks(s["test_period_start"], s["test_weeks_total"])
-                    # Replace whatever was there with the new remaining period
                     d["teacher_message"] = re.sub(
                         r"(remaining\s+)?test\s+period\s+(\(\d+\s+weeks\)?|\d+\s+weeks?)", 
                         f"remaining test period {rem}", 
@@ -516,11 +571,8 @@ async def get_notifs(branch: str = "BCA") -> List[dict]:
         results.append(d)
     return results
 
-# adding a new notification
+# Sends a system or coordination message to the dashboard
 async def add_notification(title: str, message: str, n_type: str, teacher_message: Optional[str] = None, branch: str = "BCA"):
-    # Inserts a new notification into the database. 
-    # title: notification title, message: body message for students, n_type: type of notification.
-    # print(f"DEBUG: Adding new notification: {title}")
     query = notifications_table.insert().values(
         title=title,
         message=message,
@@ -532,17 +584,15 @@ async def add_notification(title: str, message: str, n_type: str, teacher_messag
     )
     return await db.execute(query)
 
-# calculating how many weeks are left
+# Works out how much time is left in a scheduling trial
 async def calculate_remaining_weeks(start_date_val: Optional[any], total_weeks: int = 2) -> str:
     if not start_date_val:
         return f"{total_weeks} weeks"
     try:
         if isinstance(start_date_val, str):
-            # Try parsing ISO format first
             try:
                 start_date = datetime.fromisoformat(start_date_val)
             except ValueError:
-                # Fallback for other formats if any
                 return f"{total_weeks} weeks"
         elif isinstance(start_date_val, datetime):
             start_date = start_date_val
@@ -558,26 +608,48 @@ async def calculate_remaining_weeks(start_date_val: Optional[any], total_weeks: 
     except Exception:
         return f"{total_weeks} weeks"
 
-# updating a single class status
+# Changes the status and timing of a class in the records
 async def update_schedule(subjectprefix: str, new_status: str, totalstudents: Optional[int] = None, target_day: Optional[str] = None, present_count: Optional[int] = None):
-    # Updates exactly one schedule entry based on subject + day.
+    valid_subjects_map = {
+        "AI": "Artificial Intelligence",
+        "IoT": "Internet of Things",
+        "MA": "Mobile Applications",
+        "PBI": "Power BI",
+        "SE": "Software Engineering",
+        "Project LAB": "Project Lab",
+        "MA LAB": "Mobile Applications Lab",
+        "Internship": "Internship",
+        "Library": "Library",
+        "CC": "Cloud Computing",
+        "DL": "Deep Learning"
+    }
+    reverse_map = {v.lower(): k for k, v in valid_subjects_map.items()}
+    if subjectprefix.lower() in reverse_map:
+        subjectprefix = reverse_map[subjectprefix.lower()]
+
     normalized_day = normalize_day(target_day) if target_day else None
-    resolved_subject = resolve_subject_instance(subjectprefix, target_day)
-
+    
+    resolved_subject = None
+    check_exact_query = schedule_table.select().where(
+        func.lower(schedule_table.c.subject) == subjectprefix.lower()
+    )
+    existing = await db.fetch_one(check_exact_query)
+    if existing:
+        resolved_subject = subjectprefix
+        
     if not resolved_subject:
-        check_exact_query = schedule_table.select().where(
-            func.lower(schedule_table.c.subject) == subjectprefix.lower()
+        resolved_subject = get_subject_family(subjectprefix)
+        check_exact_query2 = schedule_table.select().where(
+            func.lower(schedule_table.c.subject) == resolved_subject.lower()
         )
-        existing = await db.fetch_one(check_exact_query)
-        if existing:
-            resolved_subject = subjectprefix
+        existing2 = await db.fetch_one(check_exact_query2)
+        if not existing2:
+            resolved_subject = None
 
     if not resolved_subject:
-        check_all = await db.fetch_all(schedule_table.select())
         raise ValueError(
             "No schedule entry found for subject '" + subjectprefix + "' on day '" + (target_day or "None") + "'."
         )
-
 
     update_values = {"status": new_status, "is_active": True}
     
@@ -601,9 +673,6 @@ async def update_schedule(subjectprefix: str, new_status: str, totalstudents: Op
     await db.execute(query)
     await apply_subject_change_to_revised_grid(resolved_subject, new_status, normalized_day)
 
-    # Enforce one active modified class per subject family.
-    # If one instance is delayed/rescheduled/merged, every sibling instance
-    # must return to On Schedule so changes don't spill to multiple days.
     changed_statuses = {"Delayed", "Rescheduled", "Merged", "Cancelled"}
     if normalized_day and new_status in changed_statuses:
         resolved_family = get_subject_family(resolved_subject)
@@ -619,7 +688,6 @@ async def update_schedule(subjectprefix: str, new_status: str, totalstudents: Op
             if get_subject_family(row_subject) != resolved_family:
                 continue
 
-            # Skip rows that are already fully clean.
             if row_dict.get("status") == "On Schedule" and row_dict.get("original_time") is None:
                 continue
 
@@ -632,14 +700,10 @@ async def update_schedule(subjectprefix: str, new_status: str, totalstudents: Op
 
     return resolved_subject
 
-# resetting a class to its original state
+# Reverts all changes for a specific subject back to normal
 async def reset_subject_schedule(subject_name: str):
-    # This function reverts a specific subject family to its original state
-    # print(f"DEBUG: Manually resetting schedule for subject: {subject_name}")
     family = get_subject_family(subject_name)
     
-    # 1. Deactivate status alerts for this subject family
-    # We find all records where the subject belongs to this family
     all_alerts = await db.fetch_all(schedule_table.select())
     for alert in all_alerts:
         a_dict = dict(alert)
@@ -649,24 +713,18 @@ async def reset_subject_schedule(subject_name: str):
                     schedule_table.c.id == a_dict["id"]
                 ).values(status="On Schedule", is_active=False, original_time=None, test_period_start=None)
             )
-            # 2. Reset its position in the revised grid
             await reset_subject_revised_position(a_dict["subject"])
 
-# making a schedule change permanent
+# Commits temporary schedule changes to the permanent grid
 async def make_schedule_permanent(subject_name: str):
-    # This function marks a subject change as the new 'normal' (permanent)
-    # 1. Find the current position in the REVISED grid
     revised_records = await db.fetch_all(timetable_table.select().where(
         (timetable_table.c.is_revised == True) & (timetable_table.c.subject == subject_name)
     ))
     
-    # 2. Clear this subject from the ORIGINAL grid
     await db.execute(timetable_table.update().where(
         (timetable_table.c.is_revised == False) & (timetable_table.c.subject == subject_name)
     ).values(subject=""))
     
-    # 3. Update the ORIGINAL grid entries to match the REVISED spots
-    # This makes original_pos == revised_pos for future comparisons
     for r in revised_records:
         await db.execute(timetable_table.update().where(
             (timetable_table.c.is_revised == False) & 
@@ -675,7 +733,6 @@ async def make_schedule_permanent(subject_name: str):
         ).values(subject=subject_name))
 
     family = get_subject_family(subject_name)
-    # Update all alerts in this family to be 'On Schedule' and inactive
     all_alerts = await db.fetch_all(schedule_table.select())
     for alert in all_alerts:
         a_dict = dict(alert)
@@ -686,21 +743,18 @@ async def make_schedule_permanent(subject_name: str):
                 ).values(status="On Schedule", is_active=False, original_time=None, new_time=None, test_period_start=None)
             )
 
-# deleting all notifications
+# Deletes all alerts from the entire system database
 async def clear_all_notifications():
-    # print("DEBUG: Clearing all notifications...")
     query = notifications_table.delete()
     await db.execute(query)
 
+# Removes all coordination messages for a single branch
 async def clear_notifications_by_branch(branch: str):
-    # print(f"DEBUG: Clearing notifications for branch {branch}...")
     query = notifications_table.delete().where(notifications_table.c.branch == branch)
     await db.execute(query)
 
-# cancelling a specific class
+# Marks a specific class session as cancelled
 async def cancel_class(target_subject: str, target_day: str):
-    # print(f"DEBUG: Cancelling class '{target_subject}' on {target_day}...")
-    # 1. Check if a record already exists for this class AND day
     normalized_day = normalize_day(target_day)
     check_query = schedule_table.select().where(
         (schedule_table.c.subject == target_subject) & 
@@ -708,7 +762,6 @@ async def cancel_class(target_subject: str, target_day: str):
     )
     existing_record = await db.fetch_one(check_query)
     
-    # 2. Update or Insert
     if existing_record:
         update_query = schedule_table.update().where(
             (schedule_table.c.subject == target_subject) & 
@@ -724,7 +777,6 @@ async def cancel_class(target_subject: str, target_day: str):
         )
         await db.execute(insert_query)
     
-    # 3. Add Notification
     msg = f"{target_subject} has been cancelled."
     if "PBI" in target_subject.upper():
         msg = "PBI class rescheduled/cancelled."
@@ -736,41 +788,33 @@ async def cancel_class(target_subject: str, target_day: str):
         teacher_message=f"Class {target_subject} cancelled. Est period: 2 weeks."
     )
 
-# --- Global Control Operations ---
-
-# clearing all modified schedules
+# Completely clears all adjustments and resets the timetable
 async def reset_all_schedules():
-    # 1. Hide all status alerts
-    query = schedule_table.update().values(is_active=False)
-    await db.execute(query)
+    # 1. Reset all schedule markers
+    await db.execute(schedule_table.update().values(status="On Schedule", is_active=False, original_time=None, new_time=None, test_period_start=None))
+    
+    # 2. Reset the timetable grid to match original state
+    original_data = await db.fetch_all(timetable_table.select().where(timetable_table.c.is_revised == False))
+    
+    # Simple and fast: clear revised first
+    await db.execute(timetable_table.update().where(timetable_table.c.is_revised == True).values(subject="", occupancy_count=0))
+    
+    # Then match from original
+    for r in original_data:
+        await db.execute(
+            timetable_table.update().where(
+                (timetable_table.c.is_revised == True) &
+                (timetable_table.c.day == r["day"]) &
+                (timetable_table.c.time_slot == r["time_slot"]) &
+                (timetable_table.c.branch == r["branch"])
+            ).values(subject=r["subject"], occupancy_count=r["occupancy_count"])
+        )
 
-    # 2. Overwrite revised grid with original data for all branches
-    await db.execute(timetable_table.delete().where(timetable_table.c.is_revised == True))
-    
-    entries = []
-    def add_map(schedule_map, branch_name):
-        for day, subjects in schedule_map.items():
-            for index, subject in enumerate(subjects):
-                entries.append({
-                    "day": day, 
-                    "time_slot": time_slots[index], 
-                    "subject": subject, 
-                    "is_revised": True,
-                    "branch": branch_name
-                })
-    
-    add_map(original_schedule_map, "BCA")
-    add_map(bcada_original_map, "BCADA")
-    
-    await db.execute_many(timetable_table.insert(), entries)
-
-# putting back all modified schedules
+# Reactiveates all modified schedules to the latest saved state
 async def restore_all_schedules():
-    # 1. Restore status alerts
     query = schedule_table.update().values(is_active=True)
     await db.execute(query)
 
-    # 2. Put back the actual physical movements in the revised grid for all branches
     await db.execute(timetable_table.delete().where(timetable_table.c.is_revised == True))
     
     entries = []
@@ -790,11 +834,8 @@ async def restore_all_schedules():
     
     await db.execute_many(timetable_table.insert(), entries)
 
-# --- Timetable Grid Operations ---
-
-# getting the timetable grid data
+# Provides a list of classes for the timetable view
 async def get_timetable_data(is_revised: bool = False, branch: Optional[str] = "BCA") -> List[dict]:
-    # print(f"DEBUG: Fetching timetable data (revised={is_revised})...")
     conditions = [timetable_table.c.is_revised == is_revised]
     if branch:
         conditions.append(timetable_table.c.branch == branch)
@@ -803,7 +844,7 @@ async def get_timetable_data(is_revised: bool = False, branch: Optional[str] = "
     records = await db.fetch_all(query)
     return [dict(r) for r in records]
 
-# filling the grid with starting data
+# Sets up the database with the initial class information
 async def _seed_timetable_grid():
     await db.execute(timetable_table.delete())
     
@@ -827,22 +868,19 @@ async def _seed_timetable_grid():
     add_map(bcada_revised_map, True, "BCADA")
             
     await db.execute_many(timetable_table.insert(), entries_to_insert)
-    # print("Timetable seeded successfully!")
 
-# calculating status alerts for everyone
+# Creates auto-alerts for any detected schedule inconsistencies
 async def _seed_schedule_alerts():
-    # print("DEBUG: Fetching and calculating schedule status alerts from database...")
-    # 1. Fetch current schedule state to preserve attendance and test period data
-    current_schedule = { (r["subject"], r["branch"]): r for r in await db.fetch_all(schedule_table.select()) }
+    # FIRST, restore the grid to the original state from maps
+    await _seed_timetable_grid()
+
+    current_schedule = { (r["subject"], r["branch"]): dict(r) for r in await db.fetch_all(schedule_table.select()) }
     
-    # 2. Clear existing alerts
     await db.execute(schedule_table.delete())
     
-    # 3. Fetch original and revised grid data from database (All Branches)
     orig_records = await get_timetable_data(is_revised=False, branch=None)
     revised_records = await get_timetable_data(is_revised=True, branch=None)
     
-    # 3. Extract unique, valid subjects (Filtered and mapped as per user request)
     valid_subjects_map = {
         "AI": "Artificial Intelligence",
         "IoT": "Internet of Things",
@@ -862,14 +900,10 @@ async def _seed_schedule_alerts():
         if subject_str and subject_str != "LUNCH" and subject_str != "":
             subjects.add(subject_str)
     
-    time_slots = ["7:00-7:50", "7:55-8:45", "9:15-10:05", "10:10-11:00", "11:05-11:55", "12:00-12:50", "12:50-1:50", "1:50-2:40", "2:45-3:35", "3:40-4:30"]
-
     alerts_to_insert = []
     
-    # Clear old notifications to avoid cluttering on re-seed
     await db.execute(notifications_table.delete())
     
-    # Helper to strip instance IDs for display/mapping
     def get_base_name(s):
         import re
         return re.sub(r'\d+$', '', s)
@@ -884,24 +918,13 @@ async def _seed_schedule_alerts():
             if subject_str and subject_str != "LUNCH" and subject_str != "":
                 branch_subjects.add(subject_str)
 
-        # Pre-fetch approved merges for this branch to identify "Merged" status
-        merge_query = merge_requests_table.select().where(
-            (merge_requests_table.c.status == "approved") & 
-            ((merge_requests_table.c.target_branch == branch) | (merge_requests_table.c.requestor_branch == branch))
-        )
-        approved_merges = await db.fetch_all(merge_query)
-        merged_subjects = {}
-        for m in approved_merges:
-            other = m["target_branch"] if m["requestor_branch"] == branch else m["requestor_branch"]
-            merged_subjects[m["subject"]] = other
-
+        # Mapping subjects to their proper departements
         for subject in sorted(list(branch_subjects)):
-            # Calculate status by checking positions in fetched records
             orig_positions = [
-                f"{r['day']} {r['time_slot']}" for r in branch_orig if r['subject'] == subject
+                f"{normalize_day(r['day'])} {r['time_slot']}" for r in branch_orig if r['subject'] == subject
             ]
             revised_positions = [
-                f"{r['day']} {r['time_slot']}" for r in branch_revised if r['subject'] == subject
+                f"{normalize_day(r['day'])} {r['time_slot']}" for r in branch_revised if r['subject'] == subject
             ]
             
             status = "On Schedule"
@@ -924,9 +947,18 @@ async def _seed_schedule_alerts():
                 revised_days = set(p.split(' ')[0] for p in revised_positions)
                 
                 new_slot = revised_positions[0] if revised_positions else "Unknown"
-                other_dept = merged_subjects.get(subject)
                 
-                # Fetch preserved data (Like attendance / headcount) from previous state
+                # Check for merged status
+                merge_query = merge_requests_table.select().where(
+                    (merge_requests_table.c.status == "approved") & 
+                    (merge_requests_table.c.subject == subject) &
+                    ((merge_requests_table.c.target_branch == branch) | (merge_requests_table.c.requestor_branch == branch))
+                )
+                merge_record = await db.fetch_one(merge_query)
+                other_dept = None
+                if merge_record:
+                    other_dept = merge_record["target_branch"] if merge_record["requestor_branch"] == branch else merge_record["requestor_branch"]
+
                 attendance_info = ""
                 if prev_record and prev_record.get("total_students", 0) > 0:
                     p = prev_record.get("present_count", 0)
@@ -936,8 +968,8 @@ async def _seed_schedule_alerts():
                 
                 if other_dept:
                     status = "Merged"
-                    # Specific message for students as per requested format
-                    main_msg = display_name + " at " + new_slot + " is merged with " + other_dept + "."
+                    # Format strictly per user request: "{subjectname} merged with {classname} a {time,day}"
+                    main_msg = f"{display_name} merged with {other_dept} a {new_slot}"
                     t_msg = main_msg + attendance_info + " (Test period: 2 weeks)."
                 elif orig_days == revised_days:
                     status = "Delayed"
@@ -960,7 +992,7 @@ async def _seed_schedule_alerts():
                 "class_id": 100 + len(alerts_to_insert),
                 "subject": subject, 
                 "status": status,
-                "is_active": True,
+                "is_active": (status != "On Schedule"),
                 "branch": branch,
                 "test_period_start": prev_record["test_period_start"] if (prev_record and status != "On Schedule") else None,
                 "present_count": prev_record["present_count"] if prev_record else 0,
@@ -968,14 +1000,10 @@ async def _seed_schedule_alerts():
             })
     
     await db.execute_many(schedule_table.insert(), alerts_to_insert)
-    # print(f"Success: {len(alerts_to_insert)} alerts calculated and notifications broadcasted.")
 
-# updating the live count for a class
+# Updates the attendance numbers for a specific day and class
 async def update_occupancy(subject: str, count: int, day: str):
-    # This records how many people were detected in a class for live monitoring
-    # Points to the REVISED grid where the class is currently active
     d = normalize_day(day)
-    # print(f"DEBUG: Updating occupancy for {subject} on {d} to {count}")
     await db.execute(
         timetable_table.update().where(
             (timetable_table.c.is_revised == True) &
@@ -984,24 +1012,23 @@ async def update_occupancy(subject: str, count: int, day: str):
         ).values(occupancy_count=count)
     )
 
+# Checks if a teacher is already busy at a certain time
 async def check_teacher_availability(branch: str, day: str, time_slot: str) -> Optional[str]:
-    # Checks if a teacher (branch) already has a class in a specific slot in the REVISED grid
     d = normalize_day(day)
+    t = normalize_time_slot(time_slot)
     query = timetable_table.select().where(
         (timetable_table.c.is_revised == True) &
         (timetable_table.c.branch == branch) &
         (timetable_table.c.day == d) &
-        (timetable_table.c.time_slot == time_slot)
+        (timetable_table.c.time_slot == t)
     )
     result = await db.fetch_one(query)
     if result and result["subject"] and result["subject"] != "LUNCH" and result["subject"] != "":
         return result["subject"]
     return None
 
-# processing the merge approval or denial
+# Finalizes a merge request based on teacher coordination
 async def process_merge_response(notif_id: int, approved: bool):
-    # Process the decision made by the recipient teacher
-    # 1. Find the request
     req = await db.fetch_one(merge_requests_table.select().where(merge_requests_table.c.notification_id == notif_id))
     if not req:
         return False, "Request not found"
@@ -1011,13 +1038,13 @@ async def process_merge_response(notif_id: int, approved: bool):
     subject_id = req["subject"]
 
     if not approved:
-        # Mark as rejected
-        await db.execute(merge_requests_table.update().where(merge_requests_table.c.id == req["id"]).values(status="rejected"))
+        await db.execute(merge_requests_table.update().where(merge_requests_table.c.id == req["id"]).values(status="fallback_pending"))
         
-        # Broadcast notifications to participating departments
-        reject_msg = f"The proposed merge for {subject_id} (from {requestor_branch}) was declined."
+        fallback_day = req["proposed_day"] if req["proposed_day"] else req["day"]
+        fallback_slot = req["proposed_time_slot"] if req["proposed_time_slot"] else req["time_slot"]
+        reject_msg = f"[TEST PERIOD] The proposed merge for {subject_id} on {fallback_day} at {fallback_slot} was declined by {target_branch}. Would you prefer to shift the class a hour later or remain on schedule?"
         await add_notification(
-            title="Merge Declined",
+            title="Merge Declined - Action Required",
             message="",
             n_type="alert",
             teacher_message=reject_msg,
@@ -1030,28 +1057,22 @@ async def process_merge_response(notif_id: int, approved: bool):
             teacher_message=f"You declined the merge request for {subject_id}.",
             branch=target_branch
         )
-        return True, "Merge declined"
+        return True, "Merge declined. Fallback decision routed to requestor."
 
-    # If approved:
-    # 2. Update the grid for the requestor's subject
-    # Use negotiated time if present, else original request time
     final_day = req["proposed_day"] if req["proposed_day"] else req["day"]
-    final_slot = req["proposed_time_slot"] if req["proposed_time_slot"] else req["time_slot"]
+    final_slot = normalize_time_slot(req["proposed_time_slot"] if req["proposed_time_slot"] else req["time_slot"])
 
-    # Clear old position
-    await clear_subject_from_revised_grid(subject_id)
+    await clear_subject_from_revised_grid(subject_id, branch=requestor_branch, day=req["day"], time_slot=req["time_slot"])
 
-    # Insert into new position in the requestor's department timetable
     await db.execute(
         timetable_table.update().where(
             (timetable_table.c.is_revised == True) &
             (timetable_table.c.day == final_day) &
             (timetable_table.c.time_slot == final_slot) &
-            (timetable_table.c.branch == requestor_branch)
+            (timetable_table.c.branch.in_([requestor_branch, target_branch]))
         ).values(subject=subject_id)
     )
 
-    # 3. Update the schedule status record
     await db.execute(
         schedule_table.update().where(schedule_table.c.subject == subject_id).values(
             status="Merged",
@@ -1060,15 +1081,12 @@ async def process_merge_response(notif_id: int, approved: bool):
         )
     )
 
-    # 4. Mark request as approved
     await db.execute(merge_requests_table.update().where(merge_requests_table.c.id == req["id"]).values(status="approved"))
 
-    # 5. Notify EVERYONE Concerned (Both branches)
-    # Use branch-specific messages for students as requested
-    student_msg_requestor = f"{subject_id} merged with {target_branch} at {final_day} {final_slot}."
-    student_msg_target = f"{subject_id} merged with {requestor_branch} at {final_day} {final_slot}."
+    # Format strictly per user request: "{subjectname} merged with {classname} a {time,day}"
+    student_msg_requestor = f"{subject_id} merged with {target_branch} a {final_slot}, {final_day}"
+    student_msg_target = f"{subject_id} merged with {requestor_branch} a {final_slot}, {final_day}"
     
-    # Notify Requestor Branch (Students and Teacher)
     await add_notification(
         title="Merge Finalized",
         message=student_msg_requestor,
@@ -1077,7 +1095,6 @@ async def process_merge_response(notif_id: int, approved: bool):
         branch=requestor_branch
     )
     
-    # Notify Target Branch (Students and Teacher)
     await add_notification(
         title="Merge Finalized",
         message=student_msg_target,
@@ -1088,14 +1105,12 @@ async def process_merge_response(notif_id: int, approved: bool):
 
     return True, "Merge success"
 
-# --- Lifecycle Management ---
-
-# starting the database connection
+# Opens the connection to the application database
 async def init_db():
     engine = create_engine(DATABASE_CONN_URL)
     metadata.create_all(engine)
     await db.connect()
 
+# Safely shuts down the connection to the database
 async def close_db():
-    # print("DEBUG: Closing database connection...")
     await db.disconnect()

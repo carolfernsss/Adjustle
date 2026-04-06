@@ -17,6 +17,27 @@ const InteractiveGuide = function ({ role, currentPage, onNavigate, onClose, sho
                 position: "center"
             },
             {
+                title: "Live Timetable",
+                description: "This is the live grid showing all class sessions for your course. It's updated in real-time.",
+                page: "timetable",
+                targetId: "main-timetable-grid",
+                position: "top"
+            },
+            {
+                title: "Step 1: Click any Day",
+                description: "Click specifically on any Day (e.g. Monday) to focus on its subjects.",
+                page: "timetable",
+                targetId: "timetable-monday-row",
+                position: "bottom"
+            },
+            {
+                title: "Step 2: View Filtered List",
+                description: "The list on the right now updates to show only the subjects and status for that specific day.",
+                page: "timetable",
+                targetId: "right-sidebar-alerts",
+                position: "left"
+            },
+            {
                 title: "Real-Time Updates",
                 description: "Keep an eye on this sidebar. It shows instant alerts for any rescheduled or cancelled classes in your department.",
                 page: "timetable",
@@ -27,17 +48,17 @@ const InteractiveGuide = function ({ role, currentPage, onNavigate, onClose, sho
 
         const teacherSteps = [
             {
-                title: "Professor's Portal",
-                description: "As a department chair, you have exclusive control over the schedule grid here.",
+                title: "One-Click Sync",
+                description: "REVERT: Undo all current week's changes.\nRESTORE: Bring back your previously saved adjustments across the department.",
                 page: "timetable",
-                targetId: "nav-timetable",
+                targetId: "dept-controls",
                 position: "bottom"
             },
             {
-                title: "One-Click Sync",
-                description: "Use these controls to Reset to original timings or Restore your recent changes across the entire department.",
+                title: "View Modes",
+                description: "ORIGINAL: The standard university timetable.\nLATEST: Shows the adjustments made based on AI attendance data.",
                 page: "timetable",
-                targetId: "dept-controls",
+                targetId: "view-controls",
                 position: "bottom"
             },
             {
@@ -165,7 +186,7 @@ const InteractiveGuide = function ({ role, currentPage, onNavigate, onClose, sho
 
     // Auto-advance logic for interactive steps
     useEffect(function () {
-        if (!currentStepData || role !== 'teacher') return;
+        if (!currentStepData) return;
 
         // Clean up any previous interval/timeout
         let intervalId = null;
@@ -214,6 +235,69 @@ const InteractiveGuide = function ({ role, currentPage, onNavigate, onClose, sho
                 if (approveBtn) approveBtn.removeEventListener('click', handleOutcomeClick);
                 if (denyBtn) denyBtn.removeEventListener('click', handleOutcomeClick);
             };
+        }
+
+        // 4. Click a Day (Interactive advance)
+        if (currentStepData.title === "Step 1: Click any Day" || currentStepData.title === "Focus on a Day") {
+            const handleRowClick = function () {
+                setTimeout(function () {
+                    setStep(function (prev) { return prev + 1; });
+                }, 100);
+            };
+
+            const mondayRow = document.getElementById("timetable-monday-row");
+            if (mondayRow) {
+                mondayRow.addEventListener('click', handleRowClick);
+                return function () {
+                    mondayRow.removeEventListener('click', handleRowClick);
+                };
+            }
+        }
+
+        // 5. Teacher Count flow (Subject, Date, Slot, etc.)
+        const countSteps = ["Select Subject", "Pick Date", "Select Time Slot", "Enter Strength"];
+        if (role === 'teacher' && countSteps.includes(currentStepData.title)) {
+            const handleInteract = function () {
+                setTimeout(function () {
+                    setStep(function (prev) { return prev + 1; });
+                }, 400); 
+            };
+
+            const target = document.getElementById(currentStepData.targetId);
+            if (target) {
+                // For number inputs (Strength), use blur. For others, use change + click for promptness
+                if (target.tagName === 'INPUT' && target.type === 'number') {
+                    target.addEventListener('blur', handleInteract);
+                    return () => target.removeEventListener('blur', handleInteract);
+                } else if (currentStepData.targetId === 'input-calendar' || currentStepData.targetId === 'input-time-slot') {
+                    // Specific click listeners for non-form elements
+                    const handleSpecificClick = function (e) {
+                        // For calendar, only advance if a day cell is clicked
+                        if (currentStepData.targetId === 'input-calendar' && !e.target.classList.contains('calendar-day-cell')) {
+                            return;
+                        }
+                        // For Time Slot, only advance if a button is clicked
+                        if (currentStepData.targetId === 'input-time-slot' && e.target.tagName !== 'BUTTON') {
+                            return;
+                        }
+                        
+                        setTimeout(function () {
+                            setStep(function (prev) { return prev + 1; });
+                        }, 400);
+                    };
+
+                    target.addEventListener('click', handleSpecificClick);
+                    return function () {
+                        target.removeEventListener('click', handleSpecificClick);
+                    };
+                } else {
+                    // Standard change event (for Select dropdowns)
+                    target.addEventListener('change', handleInteract);
+                    return function () {
+                        target.removeEventListener('change', handleInteract);
+                    };
+                }
+            }
         }
 
         return function () {

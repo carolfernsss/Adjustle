@@ -1,26 +1,21 @@
-# logic for checking user logins
 from fastapi import APIRouter
 from pydantic import BaseModel
 from database import find_user
 from typing import Optional
 
-# router for handling logins
 auth_router = APIRouter()
 
-# format for login requests
 class UserLoginRequest(BaseModel):
     username: str
     password: str
     role: Optional[str] = None
 
-# format for the login response
 class AuthenticationResponse(BaseModel):
     success: bool
     message: str = ""
     branch: Optional[str] = "BCA"
     role: Optional[str] = "student"
 
-# function to check password and username
 async def verify_user_credentials(username, password_attempt, expected_role=None):
     user = await find_user(username)
     if not user:
@@ -37,8 +32,6 @@ async def verify_user_credentials(username, password_attempt, expected_role=None
 
     return True, "Login successful", user.get("branch", "BCA"), db_role
 
-
-# login endpoint for the website
 @auth_router.post("/login", response_model=AuthenticationResponse)
 async def process_login_request(data: UserLoginRequest):
     is_valid, msg, branch, role = await verify_user_credentials(

@@ -5,11 +5,12 @@ import { API_BASE } from "../api_config";
 
 const fullText = "ADJUSTLE";
 const fullText2 = "THE SCHEDULE THAT FITS YOU";
-/* ---- Home Page Component ---- */
+
 const Home = function (props) {
     const onNavigate = props.onNavigate;
     const role = props.role;
     const loggedIn = props.loggedIn;
+    const branch = props.branch || sessionStorage.getItem("adjustle_branch") || "BCA";
     const [notifications, setNotifications] = useState([]);
     const [displayText, setDisplayText] = useState("");
     const [displayTagline, setDisplayTagline] = useState("");
@@ -20,7 +21,6 @@ const Home = function (props) {
         let taglineTimeout = null;
         let taglineInterval = null;
 
-        // Hero Animation
         let heroIdx = 0;
         setDisplayText("");
         heroInterval = setInterval(function () {
@@ -32,7 +32,6 @@ const Home = function (props) {
             }
         }, 150);
 
-        // Tagline Animation
         taglineTimeout = setTimeout(function () {
             let tagIdx = 0;
             setDisplayTagline("");
@@ -57,7 +56,7 @@ const Home = function (props) {
     }, []);
 
     useEffect(function () {
-        fetch(API_BASE + "/notifications")
+        fetch(API_BASE + "/notifications?branch=" + branch)
             .then(function (res) {
                 return res.json();
             })
@@ -74,16 +73,9 @@ const Home = function (props) {
                     setNotifications([
                         {
                             id: 1,
-                            type: 'schedule_change',
-                            title: 'Power BI Rescheduled',
-                            message: 'Power BI class has been moved earlier on Friday.',
-                            created_at: new Date().toISOString()
-                        },
-                        {
-                            id: 2,
-                            type: 'schedule_change',
-                            title: 'Software Engineering Update',
-                            message: 'Software Engineering class timing has been adjusted.',
+                            type: 'system',
+                            title: 'Inbox Empty',
+                            message: 'No recent schedule changes or updates to display.',
                             created_at: new Date().toISOString()
                         }
                     ]);
@@ -100,7 +92,7 @@ const Home = function (props) {
                     }
                 ]);
             });
-    }, []);
+    }, [branch]);
 
     const getIcon = function (type) {
         if (type === 'schedule_change') {
@@ -109,10 +101,35 @@ const Home = function (props) {
         return <TrendingUp size={18} />;
     };
 
-    /* ---- Carousel Logic ---- */
-    const carouselItems = notifications.length > 0
-        ? [...notifications, ...notifications, ...notifications, ...notifications, ...notifications, ...notifications, 
-            ...notifications, ...notifications]
+    const processedNotifs = notifications.map(function(notif) {
+        let displayMessage = "";
+        if (role === 'teacher') {
+            if ((!notif.teacher_message || notif.teacher_message.trim() === "") && notif.type !== 'merge_request' && notif.type !== 'merge_proposal' && notif.type !== 'test_period') {
+                if (!notif.message && notif.type !== 'system') return null;
+                displayMessage = notif.message || "";
+            } else {
+                displayMessage = notif.teacher_message || notif.message || "";
+            }
+        } else {
+            if (!notif.message || notif.message.trim() === "" || notif.type === 'merge_request' || notif.type === 'merge_proposal' || notif.type === 'test_period') {
+                return null;
+            }
+            // Prevents students from seeing any "Merge Declined" and "Merge Request" alerts 
+            if (notif.title && (notif.title.toLowerCase().includes("declined") || notif.title.toLowerCase().includes("awaiting"))) {
+                return null;
+            }
+            if (notif.message && notif.message.toLowerCase().includes("awaiting teacher")) {
+                return null;
+            }
+            displayMessage = notif.message;
+        }
+        if (!displayMessage) return null;
+        return { ...notif, displayMessage };
+    }).filter(Boolean);
+
+    const carouselItems = processedNotifs.length > 0
+        ? [...processedNotifs, ...processedNotifs, ...processedNotifs, ...processedNotifs, ...processedNotifs, ...processedNotifs,
+        ...processedNotifs, ...processedNotifs]
         : [];
 
     return (
@@ -130,7 +147,7 @@ const Home = function (props) {
                     height: '100%',
                     objectFit: 'cover',
                     zIndex: -1,
-                    opacity: 0.2 // subtle background
+                    opacity: 0.2
                 }}
             >
                 <source src="/Website_Screenshots_to_Professional_Video.mp4" type="video/mp4" />
@@ -181,49 +198,61 @@ const Home = function (props) {
 
                 <div className="carousel-container" style={{ overflowX: 'hidden', width: '100%', padding: '20px 0' }}>
                     {loggedIn ? (
-                        <div className="carousel-wrapper" style={{
-                            display: 'flex',
-                            animationName: 'carousel-scroll',
-                            animationDuration: '60s',
-                            animationTimingFunction: 'linear',
-                            animationIterationCount: 'infinite',
-                            width: 'max-content',
-                        }}>
-                            {carouselItems.map(function (notif, i) {
-                                if (role !== 'teacher' && (!notif.message || notif.message.trim() === "")) {
-                                    return null;
-                                }
-                                let displayMessage = notif.message;
-                                if (role === 'teacher' && notif.teacher_message) {
-                                    displayMessage = notif.teacher_message;
-                                }
-                                const typeLabel = notif.type.replace('_', ' ');
-                                const timeString = new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                                return (
-                                    <div
-                                        key={i}
-                                        className="notification-card"
-                                        style={{ minWidth: '350px', maxWidth: '350px', marginRight: '20px' }}
-                                        onClick={function (e) {
-                                            e.stopPropagation();
-                                            onNavigate('notifications');
-                                        }}
-                                    >
-                                        <div className="notif-header" style={{ display: 'flex', justifyContent: 
-                                            'space-between', marginBottom: '10px' }}>
-                                            <span className="notif-type" style={{ display: 'flex', alignItems: 
-                                                'center', gap: '5px', fontSize: '0.8rem', color: '#d9bc94' }}>
-                                                {getIcon(notif.type)}
-                                                {typeLabel}
-                                            </span>
-                                            <span className="notif-time" style={{ fontSize: '0.8rem', opacity: 0.6 }}>{timeString}</span>
+                        carouselItems.length > 0 ? (
+                            <div className="carousel-wrapper" style={{
+                                display: 'flex',
+                                animationName: 'carousel-scroll',
+                                animationDuration: '180s',
+                                animationTimingFunction: 'linear',
+                                animationIterationCount: 'infinite',
+                                width: 'max-content',
+                            }}>
+                                {carouselItems.map(function (notif, i) {
+                                    const typeLabel = notif.type.replace('_', ' ');
+                                    const timeString = new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    return (
+                                        <div
+                                            key={i}
+                                            className="notification-card"
+                                            style={{ minWidth: '350px', maxWidth: '350px', marginRight: '20px' }}
+                                            onClick={function (e) {
+                                                e.stopPropagation();
+                                                onNavigate('notifications');
+                                            }}
+                                        >
+                                            <div className="notif-header" style={{
+                                                display: 'flex', justifyContent:
+                                                    'space-between', marginBottom: '10px'
+                                            }}>
+                                                <span className="notif-type" style={{
+                                                    display: 'flex', alignItems:
+                                                        'center', gap: '5px', fontSize: '0.8rem', color: '#d9bc94'
+                                                }}>
+                                                    {getIcon(notif.type)}
+                                                    {typeLabel}
+                                                </span>
+                                                <span className="notif-time" style={{ fontSize: '0.8rem', opacity: 0.6 }}>{timeString}</span>
+                                            </div>
+                                            <h3 className="notif-title" style={{ fontSize: '1.1rem', color: '#e8d4b8', marginBottom: '8px' }}>{notif.title}</h3>
+                                            <p className="notif-msg" style={{ fontSize: '0.9rem', opacity: 0.8, lineHeight: '1.5' }}>{notif.displayMessage}</p>
                                         </div>
-                                        <h3 className="notif-title" style={{ fontSize: '1.1rem', color: '#e8d4b8', marginBottom: '8px' }}>{notif.title}</h3>
-                                        <p className="notif-msg" style={{ fontSize: '0.9rem', opacity: 0.8, lineHeight: '1.5' }}>{displayMessage}</p>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div
+                                className="restricted-notifs-placeholder"
+                                style={{
+                                    color: '#d9bc94', opacity: 0.6, textAlign: 'center', padding: '40px', cursor: 'pointer',
+                                    letterSpacing: '4px', textTransform: 'uppercase', fontSize: '0.85rem',
+                                    border: '1px solid #d9bc941a', borderRadius: '24px',
+                                    background: '#1d140d66', width: '100%', maxWidth: '800px', margin: '0 auto',
+                                    fontFamily: 'Garamond, serif'
+                                }}
+                            >
+                                No new notifications
+                            </div>
+                        )
                     ) : (
                         <div
                             className="restricted-notifs-placeholder"

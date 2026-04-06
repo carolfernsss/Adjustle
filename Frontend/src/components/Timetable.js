@@ -2,7 +2,6 @@ import { API_BASE } from "../api_config";
 import React, { useState, useEffect } from "react";
 import "../css/Timetable.css";
 
-// This function converts the day name to proper case for consistency
 const normalizeDay = function (day) {
     if (!day) return "";
     const mapping = {
@@ -13,7 +12,6 @@ const normalizeDay = function (day) {
     return mapping[lower] || day;
 };
 
-// This object maps short subject codes to their full descriptive names
 const subjectLabelByCode = {
     "AI": "Artificial Intelligence",
     "IOT": "Internet of Things",
@@ -28,7 +26,6 @@ const subjectLabelByCode = {
     "DL": "Deep Learning"
 };
 
-// This mapping helps in getting the short code from a full subject name
 const subjectAliasToCode = {
     "ARTIFICIAL INTELLIGENCE": "AI",
     "INTERNET OF THINGS": "IOT",
@@ -36,14 +33,12 @@ const subjectAliasToCode = {
     "DEEP LEARNING": "DL"
 };
 
-// This function extracts the clean subject code from raw text strings
 const getSubjectCode = function (subjectText) {
     if (!subjectText) return "";
     const withoutId = subjectText.split("-")[0].replace(/\d+$/, "").trim().toUpperCase();
     return subjectAliasToCode[withoutId] || withoutId;
 };
 
-// This helper function returns the standardized full family name of a subject
 const getSubjectFamily = function (subjectText) {
     const code = getSubjectCode(subjectText);
     const display = subjectLabelByCode[code];
@@ -53,16 +48,13 @@ const getSubjectFamily = function (subjectText) {
     return code;
 };
 
-// This is the main component that renders the interactive weekly timetable grid
 export default function Timetable(props) {
     const {
         username, onDaySelect, role, onScheduleChange, refreshTrigger,
         viewMode = "original", setViewMode = function () { }, branch
     } = props;
 
-    // State variable for storing the list of schedule alerts from the server
     const [alertsList, setAlertsList] = useState([]);
-    // State variable for storing the full weekly schedule structure
     const [weeklySchedule, setWeeklySchedule] = useState([
         {
             day: "Monday", times: [
@@ -101,10 +93,8 @@ export default function Timetable(props) {
             ]
         },
     ]);
-    // State for showing the loading spinner during data fetching
     const [isLoading, setIsLoading] = useState(false);
 
-    // States for managing the custom confirmation popup modal
     const [showConfirm, setShowConfirm] = useState(false);
     const [confirmMsg, setConfirmMsg] = useState("");
     const [onConfirmAction, setOnConfirmAction] = useState(null);
@@ -113,7 +103,6 @@ export default function Timetable(props) {
     const [currentTestSubject, setCurrentTestSubject] = useState(null);
     const [testPeriodQueue, setTestPeriodQueue] = useState([]);
 
-    // Function to fetch the latest schedule alerts based on the selected branch
     const fetchAlerts = React.useCallback(function () {
         const branchParam = branch || "BCA";
         fetch(API_BASE + "/reschedule?branch=" + branchParam)
@@ -124,17 +113,15 @@ export default function Timetable(props) {
                 }
             })
             .catch(function (err) { });
-    }, [branch]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [branch]);
 
-    // Function to load the current notifications
     const loadNotifications = React.useCallback(function () {
         const branchParam = branch || "BCA";
         fetch(API_BASE + "/notifications?branch=" + branchParam)
             .then(function (res) { return res.json(); })
             .catch(function (err) { });
-    }, [branch]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [branch]);
 
-    // Function to check if any test periods have completed (Teacher role only)
     const checkTestPeriods = React.useCallback(function () {
         if (!role || role.toLowerCase() !== 'teacher') return;
         fetch(API_BASE + "/check_test_periods")
@@ -145,9 +132,8 @@ export default function Timetable(props) {
                 }
             })
             .catch(function (err) { });
-    }, [role]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [role]);
 
-    // Hook to set up an interval for polling fresh data every 30 seconds
     useEffect(function () {
         fetchAlerts();
         loadNotifications();
@@ -162,21 +148,19 @@ export default function Timetable(props) {
         return function () {
             clearInterval(pollInterval);
         };
-    }, [fetchAlerts, loadNotifications, checkTestPeriods, refreshTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [fetchAlerts, loadNotifications, checkTestPeriods, refreshTrigger]);
 
-    // Hook to show a confirmation dialog when a test period is finished
     useEffect(function () {
         if (testPeriodQueue.length > 0 && !showConfirm) {
             const next = testPeriodQueue[0];
             setConfirmTitle("Test Period Complete");
-            setConfirmMsg("Test period for " + next.subject + " is over. Do you want the permanent position of \"" + next.subject + "\" to be \"" + next.new_time.split(' ')[0] + "\" at \"" + next.new_time.split(' ')[1] + "\"?");
+            setConfirmMsg("The 2-week test period for " + next.subject + " has concluded. Would you like to make the new slot permanent or continue the test period?");
             setConfirmType("completion");
             setCurrentTestSubject(next);
             setShowConfirm(true);
         }
     }, [testPeriodQueue, showConfirm]);
 
-    // Hook to fetch the full timetable grid data whenever view mode or branch changes
     useEffect(function () {
         setIsLoading(true);
         const isRevised = (viewMode === "revised");
@@ -196,41 +180,31 @@ export default function Timetable(props) {
             });
     }, [viewMode, refreshTrigger, branch]);
 
-    /* ---- Helper functions ---- */
-
-    // Helper to clean up raw subject strings for display in the table cells
     const extractSubjectName = function (rawSubjectText) {
         if (!rawSubjectText) return "";
         if (rawSubjectText === "LUNCH") return "";
         const splitParts = rawSubjectText.split("-");
         const baseName = splitParts[0].trim();
-        // Strip trailing digits (e.g., MA1 -> MA) for cleaner shortlist in cell
         return baseName.replace(/\d+$/, '');
     };
 
-    // Logic to determine if a class has been moved or cancelled in the latest view
     const checkIfSubjectIsRescheduled = function (subjectName, currentDay) {
         if (!subjectName || !alertsList) return null;
         const currentDayShort = normalizeDay(currentDay);
         const subjectRawLower = String(subjectName).toLowerCase();
         const subjectFamily = getSubjectFamily(subjectName);
 
-        // Find the record that applies to this cell
         const record = alertsList.find(function (r) {
             const isValidStatus = (r.status === "Rescheduled" || r.status === "Cancelled" || r.status === "Merged" || r.status === "Delayed");
             if (!isValidStatus || r.is_active === false) return false;
 
-            // 1. Check if this is the NEW home of a moved class
             if (r.new_time) {
                 const [targetDay] = r.new_time.split(" ");
-                // Ideally we'd check targetSlot too, but since subject name matches
-                // and day matches, it's almost certainly the right cell.
                 if (normalizeDay(targetDay) === currentDayShort) {
                     if (getSubjectFamily(r.subject) === subjectFamily) return true;
                 }
             }
 
-            // 2. Check if this is OR was the original home
             const recordDay = normalizeDay(r.original_time);
             const dayMatches = !recordDay || recordDay === currentDayShort;
             if (!dayMatches) return false;
@@ -240,7 +214,6 @@ export default function Timetable(props) {
                 return true;
             }
 
-            // Fallback to family match only for explicitly day-tagged updates.
             if (!recordDay) return false;
 
             return getSubjectFamily(recordRaw) === subjectFamily;
@@ -249,7 +222,6 @@ export default function Timetable(props) {
         return record ? record.status : null;
     };
 
-    // Function to assign CSS classes to cells based on their current status
     const determineCellClassName = function (subjectName, currentDay) {
         if (subjectName === "LUNCH") return "lunch-cell";
         if (!subjectName) return "empty-cell";
@@ -260,17 +232,16 @@ export default function Timetable(props) {
         if (status === "Rescheduled") return "rescheduled-cell";
         if (status === "Delayed") return "delayed-cell";
         if (status === "Cancelled") return "cancelled-cell";
-        if (status === "Merged") return "rescheduled-cell"; // Use orange for merged too
+        if (status === "Merged") return "rescheduled-cell";
 
         return "rescheduled-cell";
     };
 
-    // Handler for when a teacher clicks a slot to revert it to original state
     const handleSubjectCellClick = function (e, subjectName, dayName, dayScheduleTimes) {
         if (role !== 'teacher' || !subjectName || subjectName === "LUNCH") return;
 
         const status = checkIfSubjectIsRescheduled(subjectName, dayName);
-        if (!status) return; // Only modified classes can be reverted
+        if (!status) return;
 
         e.stopPropagation();
 
@@ -294,7 +265,6 @@ export default function Timetable(props) {
         setShowConfirm(true);
     };
 
-    // Handler for clicking a day label to see the detailed list of classes
     const handleDayClicked = function (dayName, subjectList) {
         if (!dayName) {
             if (onDaySelect) onDaySelect(null, []);
@@ -311,7 +281,6 @@ export default function Timetable(props) {
             const displayName = subjectLabelByCode[subjectCode];
             if (!displayName) return null;
 
-            // Find actual record to get specific status (Delayed, Merged, etc)
             const subjectRawLower = String(subject).toLowerCase();
             const subjectFamily = getSubjectFamily(subject);
             const currentDayShort = normalizeDay(dayName);
@@ -325,7 +294,6 @@ export default function Timetable(props) {
                     return true;
                 }
 
-                // Family fallback is safe only when backend tagged the update day.
                 if (!recordDay) return false;
 
                 return getSubjectFamily(recordRaw) === subjectFamily;
@@ -340,8 +308,6 @@ export default function Timetable(props) {
             };
         }).filter(Boolean);
 
-        // Merge consecutive labs logic here if needed, but for now simple list is fine or re-add merge logic
-        // Re-adding merge logic for completeness as it was there before
         const mergedClasses = [];
         let i = 0;
         while (i < classesForDay.length) {
@@ -365,8 +331,6 @@ export default function Timetable(props) {
         }
     };
 
-
-    // Function that resets the entire timetable back to the original schedule
     const handleRevertChanges = function () {
         setConfirmMsg("Users will be notified: 'Timetable is reverted to its original form'");
         setOnConfirmAction(function () {
@@ -376,7 +340,7 @@ export default function Timetable(props) {
                 })
                     .then(function (data) {
                         fetchAlerts();
-                        loadNotifications(); // Refresh bell badge
+                        loadNotifications();
                         setShowConfirm(false);
                         if (onScheduleChange) onScheduleChange();
                     });
@@ -385,7 +349,6 @@ export default function Timetable(props) {
         setShowConfirm(true);
     };
 
-    // Function to restore all scheduled changes that were previously made
     const handleRestoreChanges = function () {
         setConfirmMsg("Restore Changes? This will re-apply all scheduled changes.");
         setOnConfirmAction(function () {
@@ -395,7 +358,7 @@ export default function Timetable(props) {
                     .then(function (response) { return response.json(); })
                     .then(function () {
                         fetchAlerts();
-                        loadNotifications(); // Refresh bell badge
+                        loadNotifications();
                         setShowConfirm(false);
                         if (onScheduleChange) onScheduleChange();
                     });
@@ -404,11 +367,9 @@ export default function Timetable(props) {
         setShowConfirm(true);
     };
 
-
     const timeSlotHeaders = [
         "9:15-10:05", "10:10-11:00", "11:05-11:55", "12:00-12:50", "12:50-1:50", "1:50-2:40", "2:45-3:35", "3:40-4:30"
     ];
-
 
     if (isLoading) {
         return <div className="timetable-container">Loading timetable...</div>;
@@ -416,51 +377,54 @@ export default function Timetable(props) {
 
     return (
         <div className="timetable-container">
-            {/* ---- Timetable Top Header Section ---- */}
+            { }
             <div className="timetable-header">
                 <h3>
                     {(username ? username.toUpperCase() + "'S " : "") + "TIMETABLE"}
                 </h3>
 
-                {role === 'teacher' && (
-                    <div className="timetable-controls">
-                        {/* Dept Controls Group */}
-                        <div style={{ display: 'flex', gap: '8px', borderRight: '1px solid #d9bc9433', paddingRight: '10px', marginRight: '10px' }}>
-                            <button
-                                onClick={handleRevertChanges}
-                                className="buttonrev btn-red"
-                            >
-                                Revert Changes
-                            </button>
-                            <button
-                                onClick={handleRestoreChanges}
-                                className="buttonrev btn-green"
-                            >
-                                Restore Changes
-                            </button>
-                        </div>
+                <div className="timetable-controls">
+                    { }
+                    {role.toLowerCase() === 'teacher' && (
+                        <>
+                            <div id="dept-controls" style={{ display: 'flex', gap: '8px', borderRight: '1px solid #d9bc9433', paddingRight: '10px', marginRight: '10px' }}>
+                                <button
+                                    onClick={handleRevertChanges}
+                                    className="buttonrev btn-red"
+                                >
+                                    Revert Changes
+                                </button>
+                                <button
+                                    onClick={handleRestoreChanges}
+                                    className="buttonrev btn-green"
+                                >
+                                    Restore Changes
+                                </button>
+                            </div>
 
-                        {/* View Mode Toggle */}
-                        <button
-                            className={viewMode === 'original' ? 'buttonog' : 'buttonrev'}
-                            onClick={function () { setViewMode('original'); }}
-                            id="timetable-original"
-                        >
-                            Original
-                        </button>
-                        <button
-                            className={viewMode === 'revised' ? 'buttonog' : 'buttonrev'}
-                            onClick={function () { setViewMode('revised'); }}
-                            id="timetable-latest"
-                        >
-                            Latest Changes
-                        </button>
-                    </div>
-                )}
+                            { }
+                            <div id="view-controls" style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    className={viewMode === 'original' ? 'buttonog' : 'buttonrev'}
+                                    onClick={function () { setViewMode('original'); }}
+                                    id="timetable-original"
+                                >
+                                    Original
+                                </button>
+                                <button
+                                    className={viewMode === 'revised' ? 'buttonog' : 'buttonrev'}
+                                    onClick={function () { setViewMode('revised'); }}
+                                    id="timetable-latest"
+                                >
+                                    Latest Changes
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
-            <div className="table-responsive" onClick={function (e) {
-                // Clear selection if clicking outside cells
+            <div id="main-timetable-grid" className="table-responsive" onClick={function (e) {
                 if (e.target.tagName === 'DIV') handleDayClicked(null, []);
             }}>
                 <table className="timetable">
@@ -481,8 +445,9 @@ export default function Timetable(props) {
                             return (
                                 <tr
                                     key={rowIndex}
+                                    id={rowIndex === 0 ? "timetable-monday-row" : null}
                                     onClick={function (e) {
-                                        e.stopPropagation(); // Prevent bubbling up to the reset handler
+                                        e.stopPropagation();
                                         handleDayClicked(daySchedule.day, daySchedule.times);
                                     }}
                                 >
@@ -493,7 +458,6 @@ export default function Timetable(props) {
                                         const currentTimeSlot = timeSlotHeaders[colIndex];
                                         const isLunchTime = (currentTimeSlot === "12:50-1:50");
 
-                                        // // Special handling for the lunch break column
                                         if (isLunchTime) {
                                             if (rowIndex === 0) {
                                                 return (
@@ -520,10 +484,9 @@ export default function Timetable(props) {
                                         const nextTimeSlot = timeSlotHeaders[colIndex + 1];
                                         const previousTimeSlot = timeSlotHeaders[colIndex - 1];
 
-                                        const shouldMergeWithNext = (currentSubject && currentSubject === nextSubject && nextTimeSlot !== "12:50-1:50");
-                                        const isMergedWithPrevious = (currentSubject && currentSubject === previousSubject && previousTimeSlot !== "12:50-1:50");
+                                        const shouldMergeWithNext = (currentSubject && currentSubject.toUpperCase().includes('LAB') && currentSubject === nextSubject && nextTimeSlot !== "12:50-1:50");
+                                        const isMergedWithPrevious = (currentSubject && currentSubject.toUpperCase().includes('LAB') && currentSubject === previousSubject && previousTimeSlot !== "12:50-1:50");
 
-                                        // // Logic to handle subjects that span multiple slots (like Labs)
                                         if (shouldMergeWithNext) {
                                             const cellClassName = determineCellClassName(currentSubject, daySchedule.day);
                                             const cleanName = extractSubjectName(currentSubject);
@@ -576,7 +539,7 @@ export default function Timetable(props) {
                     </tbody>
                 </table>
             </div>
-            {/* ---- Confirmation Modals for Schedule Changes ---- */}
+            { }
             {showConfirm && (
                 <div className="modal-overlay">
                     <div className="modal-content animate-up">
@@ -584,9 +547,9 @@ export default function Timetable(props) {
                         <p style={{ color: '#e8d4b8', margin: '20px 0' }}>{confirmMsg}</p>
                         <div className="modal-actions">
                             {confirmType === "completion" ? (
-                                <>
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '10px', width: '100%'}}>
                                     <button
-                                        className="button primary"
+                                        className="buttonog"
                                         onClick={function () {
                                             fetch(API_BASE + "/make_permanent", {
                                                 method: "POST",
@@ -599,23 +562,27 @@ export default function Timetable(props) {
                                             });
                                         }}
                                     >
-                                        YES (MAKE PERMANENT)
+                                        MAKE PERMANENT
                                     </button>
                                     <button
-                                        className="button secondary"
+                                        className="buttonog"
+                                        style={{ borderColor: '#22c55e', color: '#22c55e' }}
                                         onClick={function () {
-                                            setConfirmTitle("Decide Next Step");
-                                            setConfirmMsg("What should happen to \"" + currentTestSubject.subject + "\"?");
-                                            setConfirmType("test_followup");
+                                            fetch(API_BASE + "/extend_test_period", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({ subject: currentTestSubject.subject })
+                                            }).then(function () {
+                                                setShowConfirm(false);
+                                                setTestPeriodQueue(function (prev) { return prev.slice(1); });
+                                                if (onScheduleChange) onScheduleChange();
+                                            });
                                         }}
                                     >
-                                        NO
+                                        CONTINUE TEST PERIOD (2 WEEKS)
                                     </button>
-                                </>
-                            ) : confirmType === "test_followup" ? (
-                                <>
                                     <button
-                                        className="button primary"
+                                        className="buttonrev"
                                         style={{ borderColor: '#ef4444', color: '#ef4444' }}
                                         onClick={function () {
                                             fetch(API_BASE + "/reset_subject", {
@@ -631,24 +598,7 @@ export default function Timetable(props) {
                                     >
                                         REVERT TO ORIGINAL
                                     </button>
-                                    <button
-                                        className="button primary"
-                                        style={{ borderColor: '#22c55e', color: '#22c55e' }}
-                                        onClick={function () {
-                                            fetch(API_BASE + "/extend_test_period", {
-                                                method: "POST",
-                                                headers: { "Content-Type": "application/json" },
-                                                body: JSON.stringify({ subject: currentTestSubject.subject })
-                                            }).then(function () {
-                                                setShowConfirm(false);
-                                                setTestPeriodQueue(function (prev) { return prev.slice(1); });
-                                                if (onScheduleChange) onScheduleChange();
-                                            });
-                                        }}
-                                    >
-                                        ANOTHER TEST PERIOD (2 WEEKS)
-                                    </button>
-                                </>
+                                </div>
                             ) : (
                                 <>
                                     <button

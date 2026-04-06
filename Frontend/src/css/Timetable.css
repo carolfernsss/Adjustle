@@ -1,4 +1,4 @@
-/* Stylesheet for rendering the institution's primary academic timetable grid */
+
 
 .timetable-container {
     width: 100%;
@@ -65,6 +65,7 @@
     border: 1px solid #d9bc941a;
     font-family: 'Outfit', sans-serif;
     color: #e8d4b8;
+    font-weight: 400; 
 }
 
 .timetable th {
@@ -73,32 +74,28 @@
     height: 50px;
 }
 
-/* Day Column */
 .timetable-day-cell {
     background: #100c06 !important;
     font-weight: 600;
     width: 90px;
 }
 
-/* Lunch Column */
 .lunch-cell {
-    width: 20px !important;
+    width: 15px !important;
     background: #100c06 !important;
     writing-mode: vertical-lr;
     text-orientation: upright;
     font-size: 0.75rem;
-    letter-spacing: 5px;
+    letter-spacing: 18px;
     font-weight: 700;
     border: 1px solid #d9bc941a !important;
     text-align: center;
 }
 
-/* Dynamic Class Cells */
 .class-cell {
     background: transparent;
 }
 
-/* Status Variations */
 .rescheduled-cell {
     background: transparent !important;
     color: #d9bc94 !important;
@@ -120,7 +117,6 @@
     background: transparent;
 }
 
-/* Buttons */
 .buttonog,
 .buttonrev {
     padding: 6px 16px;
@@ -160,7 +156,6 @@
     border: 1px solid #22c55e33 !important;
 }
 
-/* Notification Bell */
 .timetable-bell-wrapper {
     position: relative;
     cursor: pointer;

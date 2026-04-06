@@ -4,7 +4,6 @@ import Timetable from "./Timetable";
 import { API_BASE } from "../api_config";
 import "../css/Login.css";
 
-// Component for rendering individual password validation criteria status
 function PasswordRequirement({ isValid, successText, failText }) {
   let containerClass = "requirement";
   if (isValid) {
@@ -28,7 +27,6 @@ function PasswordRequirement({ isValid, successText, failText }) {
   );
 }
 
-// Primary Login component managing user authentication state and interface
 function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsername: setGlobalUsername }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +35,6 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
   const [selectedRole, setSelectedRole] = useState("student");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Implements the background matrix animation effect using the Canvas API
   useEffect(() => {
     if (loggedIn) return;
 
@@ -61,7 +58,7 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
       ctx.fillStyle = "#0000000d";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = "#d9bc944c"; // subtle gold color
+      ctx.fillStyle = "#d9bc944c";
       ctx.font = fontSize + "px monospace";
 
       for (let i = 0; i < drops.length; i++) {
@@ -91,21 +88,17 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
 
   useEffect(() => {
     if (loggedIn) {
-      // Synchronizes the latest reschedule notice data from the server
       fetch(API_BASE + "/reschedule")
         .then(res => res.json())
         .then(data => setReschedule(data.classes));
     }
   }, [loggedIn]);
 
-  // Validates password complexity against predefined security regular expressions
   function validatePassword(pass) {
-    // 1 uppercase, 1 lowercase, 1 number, 1 special char, min 5 chars
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{5,}$/;
     return regex.test(pass);
   }
 
-  // Orchestrates the login request and manages subsequent state updates
   function handleLogin() {
     if (!validatePassword(password)) {
       setError("Password must contain 1 uppercase, 1 lowercase, 1 number, 1 special char, and be at least 5 chars long.");
@@ -215,7 +208,6 @@ function Login({ loggedIn, setLoggedIn, setRole, setBranch, onNavigate, setUsern
             </div>
           </div>
 
-          {/* Password Requirements Checklist */}
           <div className="password-requirements">
             <PasswordRequirement
               isValid={/[A-Z]/.test(password)}
